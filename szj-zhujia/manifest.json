@@ -1,0 +1,82 @@
+{
+ "zt-chongding": {
+  "source_file": "NLC416-11jh008340-30341 重訂三字經.pdf",
+  "commons_name": "File:NLC416-11jh008340-30341 重訂三字經.pdf",
+  "pages": 42
+ },
+ "zt-zengding": {
+  "source_file": "NLC416-08jh010361-9305 章太炎增訂三字經.pdf",
+  "commons_name": "File:NLC416-08jh010361-9305 章太炎增訂三字經.pdf",
+  "pages": 27
+ },
+ "zengzhu-ntl": {
+  "source_file": "NTL-9900014583 三字經增注.pdf",
+  "commons_name": "File:NTL-9900014583 三字經增注.pdf",
+  "pages": 34
+ },
+ "zengzhu-nlc": {
+  "source_file": "NLC511-027032013012941-51522 三字經增注.pdf",
+  "commons_name": "File:NLC511-027032013012941-51522 三字經增注.pdf",
+  "pages": 32
+ },
+ "beiyao-lgm": {
+  "source_file": "NLC892-312002092951-327945 三字經註解備要 南京李光明莊清刻本.pdf",
+  "commons_name": "File:NLC892-312002092951-327945 三字經註解備要 南京李光明莊清刻本.pdf",
+  "pages": 65
+ },
+ "beiyao-1887a": {
+  "source_file": "NLC892-312002092948-327942 三字經註解備要 二卷 清光緒十三年刻本 第1冊.pdf",
+  "commons_name": "File:NLC892-312002092948-327942 三字經註解備要 二卷 清光緒十三年刻本 第1冊.pdf",
+  "pages": 47
+ },
+ "beiyao-1887b": {
+  "source_file": "NLC892-312002092948-327943 三字經註解備要 二卷 清光緒十三年刻本 第2冊.pdf",
+  "commons_name": "File:NLC892-312002092948-327943 三字經註解備要 二卷 清光緒十三年刻本 第2冊.pdf",
+  "pages": 39
+ },
+ "beiyao-1876": {
+  "source_file": "NLC892-312002092945-327938 三字經註解備要 二卷 清光緒二年刻本.pdf",
+  "commons_name": "File:NLC892-312002092945-327938 三字經註解備要 二卷 清光緒二年刻本.pdf",
+  "pages": 139
+ },
+ "yinshu-1": {
+  "source_file": "NLC892-312002092946-327939 三字經集注音疏 二卷 第1冊.pdf",
+  "commons_name": "File:NLC892-312002092946-327939 三字經集注音疏 二卷 第1冊.pdf",
+  "pages": 68
+ },
+ "yinshu-2": {
+  "source_file": "NLC892-312002092946-327940 三字經集注音疏 二卷 第2冊.pdf",
+  "commons_name": "File:NLC892-312002092946-327940 三字經集注音疏 二卷 第2冊.pdf",
+  "pages": 89
+ },
+ "baiwen": {
+  "source_file": "NLC892-312002092952-327946 三字經.pdf",
+  "commons_name": "File:NLC892-312002092952-327946 三字經.pdf",
+  "pages": 22
+ },
+ "xiuzhen": {
+  "source_file": "NLC892-312002092953-327947 新刻袖珍三字經.pdf",
+  "commons_name": "File:NLC892-312002092953-327947 新刻袖珍三字經.pdf",
+  "pages": 13
+ },
+ "wx-cnts": {
+  "source_file": "CNTS-00047690771 三字經訓詁.pdf",
+  "commons_name": "File:CNTS-00047690771 三字經訓詁.pdf",
+  "pages": 101
+ },
+ "jizhu-cnts": {
+  "source_file": "CNTS-00047690770 三字經集註.pdf",
+  "commons_name": "File:CNTS-00047690770 三字經集註.pdf",
+  "pages": 72
+ },
+ "zengzhu-cnts": {
+  "source_file": "CNTS-00047985099 增註三字經.pdf",
+  "commons_name": "File:CNTS-00047985099 增註三字經.pdf",
+  "pages": 21
+ },
+ "zhengxue": {
+  "source_file": "SSID-11381840 正學養蒙三字經註解.pdf",
+  "commons_name": "File:SSID-11381840 正學養蒙三字經註解.pdf",
+  "pages": 278
+ }
+}
