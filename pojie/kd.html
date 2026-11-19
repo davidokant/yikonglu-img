@@ -525,8 +525,8 @@ window.seek=T=>{let t=T<.06?COVER:T;const td=t;if(PZ&&t>=PZ[0]&&t<PZ[0]+PZ[1])t=
 // 柯基神出鬼没：每两句口播换个地方。换的时候先钻进洞里，再从别处的洞里钻出来接着说
 function dogAt(t){if(YH&&t>YH[0]&&t<YH[1]){DOG.style.visibility='hidden';HOLE.style.opacity=0;return}DOG.style.visibility='';const f=Math.round(t*30),o=dogMouth(t,f),bl=(t%3.7)>3.58,by=Math.sin(t*2.4)*5-o*6,dk=o.toFixed(2)+(bl?'b':'');
   const SG=DSEG&&DSEG.length?DSEG:[[0,1e9,DP]];let j=0;while(j<SG.length-1&&t>=SG[j][1])j++;const [s0,s1,p]=SG[j],last=j==SG.length-1;if(!p){DOG.style.display='none';HOLE.style.opacity=0;return}DOG.style.display='';
-  let sink=0,hole=0;
-  if(!last&&t>s1-.24){const u=(t-(s1-.24))/.24;sink=u*u;hole=Math.min(1,(t-(s1-.3))/.08)}            // 钻进去
+  let sink=0,hole=0;const CV=t===COVER;   // 封面帧（头两帧）：柯基照常露面，不画钻洞
+  if(CV);else if(!last&&t>s1-.24){const u=(t-(s1-.24))/.24;sink=u*u;hole=Math.min(1,(t-(s1-.3))/.08)}            // 钻进去
   else if(!last&&t>s1-.3)hole=(t-(s1-.3))/.08;
   else if(j>0&&t<s0+.42){const u=Math.min(1,(t-s0)/.3);sink=Math.max(0,1-(1-(1-u)**3))-.1*Math.sin(Math.PI*u);hole=t<s0+.26?Math.min(1,(t-s0)/.06+.2):1-(t-s0-.26)/.16}   // 钻出来，冒头时多蹿一点
   hole=Math.max(0,Math.min(1,hole));const z=p[2];
