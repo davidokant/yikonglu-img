@@ -11,7 +11,9 @@ sys.path.insert(0, HERE)
 import zicha
 zicha.SK = os.path.join(HERE, 'phon.tsv'); zicha.HERE = HERE
 def main(ep):
-    a = types.SimpleNamespace(gao=None, ep=None, dv=None, kind='热点', pb=os.path.join(HERE, 'ep', ep, 'out', 'pb.json'), root=None, qi=None)
+    class NS(types.SimpleNamespace):
+        def __getattr__(self, k): return None      # zicha 以后加的参数（比如 xe）热点线都没有，一律当“缺输入”
+    a = NS(kind='热点', pb=os.path.join(HERE, 'ep', ep, 'out', 'pb.json'))
     if not os.path.exists(a.pb): a.pb = None
     rc = 0
     for name, fn in zicha.CHECKS:

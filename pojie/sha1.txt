@@ -4,7 +4,7 @@ f0e341c1ab0d09e2fcc2cf39a32899de80b411af  kd.html
 b155a87a554aabd77ef0e6cf8c964eb2974c2ba5  kd.py
 51d0c8f26b37296779621b7b76983d95b2fdfff1  render.js
 56e64eef0d51c0c39871a7b2b3b1f969375c271d  caiji2spec.py
-5ab90ef4f0c9dc0dfd155c1710f1ed216ec08ee4  zicha_kd.py
+5a5362c2939bcd674a5827e10999706b7daadb93  zicha_kd.py
 f069297b037cc24ca0f908552c55d350a2eecd31  zicha.py
 e3b3e21f80e6df63708a30e239d4dc54d4ff482e  锁读回归例句.tsv
 05a6de4d473053230d487eacb0afac02e7abb42d  phon.tsv
