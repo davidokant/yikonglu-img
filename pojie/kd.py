@@ -53,6 +53,11 @@ def pojie(ep):
     if not p and not l: return {'带': '不带'}
     return {'带': '两招' if p and l else '只带按停' if p else '只带撑满', '撑开秒': l and l['t'], '按停秒': p and p['t'], '按停多久': p and p['dur'], '说明': j.get('note') or []}
 
+def pbwarn(ep):
+    """进度条机检（11-19 加）：render.js 写的 out/pb.json，有就并进“提醒”，不拦片"""
+    try: return ['进度条：' + x for x in json.load(open(f'{HERE}ep/{ep}/out/pb.json', encoding='utf-8'))]
+    except Exception: return []
+
 def fabu(items, R, out):
     """发布单：每条一项。标题、简介、话题采集单里给了（发布标题、发布简介、话题）就用，没给就照条目拼。标题不超过 20 个字（小红书的限）"""
     day = time.gmtime(time.time() + 8 * 3600); shift = day.tm_mday % 6; rows = []
@@ -120,7 +125,7 @@ def run(argv, out, jobs, mode, tidy, keep, force):
             if not fs: R[ep]['原因'] = msg; continue
             if out:
                 os.makedirs(out, exist_ok=True); fs = [shutil.copy(f, out) for f in fs]
-            R[ep].update({'破界': pojie(ep), '出片': True, '成片': os.path.abspath(fs[0]), '配乐版': os.path.abspath(fs[1]) if len(fs) > 1 else None}); note[ep] = f'出片 {sec:.0f} 秒' if sec else '没变，用上回出的'
+            R[ep]['提醒'] = (R[ep]['提醒'] or []) + pbwarn(ep); R[ep].update({'破界': pojie(ep), '出片': True, '成片': os.path.abspath(fs[0]), '配乐版': os.path.abspath(fs[1]) if len(fs) > 1 else None}); note[ep] = f'出片 {sec:.0f} 秒' if sec else '没变，用上回出的'
     print('\n—— 总表 ——')
     for ep in items:
         r = R[ep]; print(ep, '｜', '｜'.join(([f"{r['秒']} 秒", f"{r['字']} 字"] if r['秒'] else ['—', '—']) + ([note[ep] + ' → ' + r['成片'] + ('（成片带配乐）' if mode == 'music' else '（另有配乐版）' if mode == 'both' else '')] if r['出片'] else ['没出：' + r['原因']])))

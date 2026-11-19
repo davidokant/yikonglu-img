@@ -13,6 +13,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
   await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(300);
   const info = await pg.evaluate(() => window.INFO), chk = await pg.evaluate(() => window.CHK);
   console.log(`${ep}：全片 ${info.dur} 秒，金句 ${info.n} 个字分 ${info.g} 组，换卡在 ${info.cuts.map(x => x.toFixed(2)).join('、')} 秒`);
+  const pn = info.pbnote || []; fs.writeFileSync(path.join(out, 'pb.json'), JSON.stringify(pn)); console.log(pn.length ? '进度条提醒：' + pn.join('；') : '进度条：每格从头走、换卡前走满');
   const dn = await pg.evaluate(() => window.DOGNOTE || []); if (dn.length) console.log('柯基提醒：' + dn.join('；'));
   console.log(chk.length ? '机检有 ' + chk.length + ' 条要改：\n  ' + chk.join('\n  ') : '机检：字都放得下，都在安全区里');
   fs.writeFileSync(path.join(out, 'sfx.json'), JSON.stringify(await pg.evaluate(() => window.SFX)));
