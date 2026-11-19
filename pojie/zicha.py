@@ -156,6 +156,21 @@ def ct009(a):
     if not (a.root and a.qi):return None
     r=subprocess.run([sys.executable,os.path.join(ZC,'fabudan_zha.py'),a.root,a.qi],capture_output=True,text=True)
     return [l for l in r.stdout.splitlines() if '\t错\t' in l][:20]
+def ct010(a):
+    """CT-010 补配文字与片中现稿逐字比（二号机 bp_wenzi.py）：--xe 工程目录 --bupei 补配目录"""
+    if not (a.xe and a.bupei):return None
+    r=subprocess.run([sys.executable,os.path.join(HERE,'bp_wenzi.py'),a.xe,a.bupei]+([a.gao] if a.gao else []),capture_output=True,text=True)
+    return [] if r.returncode==0 else (r.stdout+r.stderr).strip().splitlines()[-20:]
+def ct011(a):
+    """CT-011 引的经文与底本录文不合：定版目录的简体字幕（--dv），或评审目录最新配音分段（--gao），跑回查线程 jingwen_zha.py，“错”须 0；“疑”逐条判，不是错的记进 规范/自查/jingwen_fangxing.tsv"""
+    tg=[]
+    if a.dv:tg.append(a.dv)
+    elif a.gao:
+        g=[f for f in glob.glob(a.gao+'/*配音分段-v*.json') if '补插科' not in f]
+        if g:tg.append(max(g,key=os.path.getmtime))
+    if not tg:return None
+    r=subprocess.run([sys.executable,os.path.join(ZC,'jingwen_zha.py')]+tg,capture_output=True,text=True)
+    return [l for l in r.stdout.splitlines() if '\t错\t' in l][:20]
 def yujian(a):
     """常规·渲前预检：稿目录里最新稿要有不早于它的 预检.md"""
     if not a.gao:return None
@@ -164,9 +179,9 @@ def yujian(a):
     g=max(g,key=os.path.getmtime);p=glob.glob(a.gao+'/*预检*.md')
     p=[x for x in p if os.path.getmtime(x)>=os.path.getmtime(g)-60]
     return [] if p else [f'最新稿 {os.path.basename(g)} 没有不早于它的预检单']
-CHECKS=[('CT-001a 读音漏锁',ct001_lou),('CT-001b 后加规则未测',ct001_hou),('CT-002 跨页红框',ct002),('CT-003 进度条',ct003),('CT-004 原页白边',ct004),('CT-005 英文章节书序',ct005),('CT-006 章号错位',ct006),('CT-007 锁读表回归',ct007),('CT-008 繁体误转',ct008),('CT-009 发布单',ct009),('常规 渲前预检',yujian)]
+CHECKS=[('CT-001a 读音漏锁',ct001_lou),('CT-001b 后加规则未测',ct001_hou),('CT-002 跨页红框',ct002),('CT-003 进度条',ct003),('CT-004 原页白边',ct004),('CT-005 英文章节书序',ct005),('CT-006 章号错位',ct006),('CT-007 锁读表回归',ct007),('CT-008 繁体误转',ct008),('CT-009 发布单',ct009),('CT-010 补配文字',ct010),('CT-011 经文逐字',ct011),('常规 渲前预检',yujian)]
 if __name__=='__main__':
-    ap=argparse.ArgumentParser();ap.add_argument('--gao');ap.add_argument('--ep');ap.add_argument('--dv');ap.add_argument('--kind',default='论语长片');ap.add_argument('--pb');ap.add_argument('--root');ap.add_argument('--qi')
+    ap=argparse.ArgumentParser();ap.add_argument('--gao');ap.add_argument('--ep');ap.add_argument('--dv');ap.add_argument('--kind',default='论语长片');ap.add_argument('--pb');ap.add_argument('--root');ap.add_argument('--xe');ap.add_argument('--bupei');ap.add_argument('--qi')
     a=ap.parse_args();rc=0
     for name,fn in CHECKS:
         r=fn(a)
