@@ -1,4 +1,4 @@
-# 大字快答模板 · 一条命令批量出片：python kd.py <采集单.json 或放采集单的目录 …> [编号 …] [--out 出片目录] [--jobs 同时渲几条=2] [--music|--both] [--keep] [--tidy] [--force]
+# 大字快答模板 · 一条命令批量出片：python kd.py <采集单.json 或放采集单的目录 …> [编号 …] [--out 出片目录] [--jobs 同时渲几条=2] [--music|--both] [--keep] [--tidy] [--force] [--no-tongbu]
 # 每天用：python kd.py --daily <根目录> [--music --tidy]：读 <根>/收件/<北京日期>/ 里所有 json，出到 <根>/成片/<北京日期>/。计划任务每 10 分钟调一次即可：
 #   已出过的不重渲，新来的才渲；上一轮还没跑完就直接退出（同一个出片目录里有“出片中.lock”且不到 40 分钟）。
 # 出片目录里还写一份 发布单.json（标题、简介、话题、建议时刻、成片文件，给发布线程读）。
@@ -85,6 +85,57 @@ def fabu(items, R, out):
                      'files': {'成片': os.path.basename(r['成片'])}, 'pojie': r.get('破界') or {'带': '不带'}, 'warn': warn, 'hot': {'title': it['热点标题原文'], 'links': it.get('报道链接', []), 'risk': it.get('风险备注', '')}})
     json.dump(rows, open(os.path.join(out, '发布单.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 
+# 锁读表自动同步（11-20 加；协调者：锁读表常改，人手拷迟早漏）：每轮出片前从传输分支取共享盘最新的 phon.tsv、锁读回归例句.tsv。
+# 分支上的版本由容器端定时任务（共享盘 .传输/redian-kd/sync/tongbu.sh）先过回归再推上来，另写 pojie/tongbu.json 记推送时刻。
+# 拿到新版：先在临时目录跑错题本 CT-007 回归，过了才换进本目录（旧的备份到 _bak-tongbu\时刻\），不过就照旧并拦下新条。
+# 拦下的情形：分支上的版本超过 TB_MAXH 小时没更新（容器端停了）；新版没过回归；取不到且本机上次取到已超过 TB_MAXH 小时。
+# 拦下只拦还没配音的新条（出过片的照旧），原因写进出片结果，退出码 1，计划任务照常报警；下一轮（10 分钟后）自动再试。只同步数据，不同步代码。
+TB_URL = os.environ.get('YK_TONGBU_URL') or 'https://github.com/davidokant/yikonglu-img.git'
+TB_BR, TB_FILES, TB_MAXH = 'claude/project-thread-tzizrb', ['phon.tsv', '锁读回归例句.tsv'], 16
+ZC7 = "import sys, zicha; zicha.SK, zicha.HERE = 'phon.tsv', '.'; r = zicha.ct007(None); [print(x) for x in r[:5]]; sys.exit(1 if r else 0)"      # 只跑错题本 CT-007 锁读表回归
+def tongbu():
+    """给回 (拦下的原因或 '', 一句说明)"""
+    R, me, now = HERE + '_tongbu', HERE + 'tongbu.json', time.time()
+    last = json.load(open(me, encoding='utf-8')).get('取到', 0) if os.path.exists(me) else 0
+    env = dict(os.environ, GIT_TERMINAL_PROMPT='0')
+    g = lambda *a, **k: subprocess.run(['git', '-C', R] + list(a), capture_output=True, timeout=120, env=env, **k)
+    try:
+        if not os.path.isdir(R + '/.git'):
+            shutil.rmtree(R, ignore_errors=True)
+            r = subprocess.run(['git', 'clone', '-q', '--depth', '1', '--filter=blob:none', '--no-checkout', '--single-branch', '-b', TB_BR, TB_URL, R], capture_output=True, timeout=180, env=env)
+            if r.returncode: raise RuntimeError('clone ' + r.stderr.decode('utf-8', 'replace').strip()[-200:])
+        r = g('fetch', '-q', '--depth', '1', 'origin', TB_BR)
+        if r.returncode: raise RuntimeError('fetch ' + r.stderr.decode('utf-8', 'replace').strip()[-200:])
+        got = {}
+        for f in TB_FILES + ['tongbu.json']:
+            r = g('show', 'FETCH_HEAD:pojie/' + f)
+            if r.returncode: raise RuntimeError(f'分支上没有 pojie/{f}')
+            got[f] = r.stdout
+        meta = json.loads(got.pop('tongbu.json').decode('utf-8'))
+    except Exception as e:
+        why = f'取不到最新锁读表（{type(e).__name__} {e}）'.replace('\n', ' ')
+        if now - last < TB_MAXH * 3600: return '', why + f'，本机 {(now - last) / 3600:.1f} 小时前取到过，这轮照旧出'
+        return why + ('，本机从没取到过' if not last else f'，本机上次取到已是 {(now - last) / 3600:.0f} 小时前'), ''
+    age = (now - meta.get('推送', 0)) / 3600
+    if age > TB_MAXH: return f'传输分支上的锁读表 {age:.0f} 小时没更新（容器端同步可能停了），怕不是最新', ''
+    loc = {f: open(HERE + f, 'rb').read() if os.path.exists(HERE + f) else b'' for f in TB_FILES}
+    ch = [f for f in TB_FILES if got[f] != loc[f]]
+    if ch:
+        T = HERE + '_tongbu_chk/'; shutil.rmtree(T, ignore_errors=True); os.makedirs(T)
+        shutil.copy(HERE + 'zicha.py', T)
+        for f in TB_FILES: open(T + f, 'wb').write(got[f])
+        z = subprocess.run([sys.executable, '-c', ZC7], **dict(RUN, cwd=T))
+        if z.returncode:
+            bad = [l.strip() for l in ((z.stdout or '') + (z.stderr or '')).splitlines() if l.strip()]
+            return '分支上的新锁读表没过回归，没换：' + '；'.join(bad[:3]), ''
+        B = HERE + '_bak-tongbu/' + time.strftime('%Y%m%d-%H%M%S') + '/'; os.makedirs(B, exist_ok=True)
+        for f in TB_FILES:
+            if loc[f]: open(B + f, 'wb').write(loc[f])
+            open(HERE + f, 'wb').write(got[f])
+        import importlib; importlib.reload(aud.T)          # aud 一进来就读了锁读表，换了要重读
+    json.dump({'取到': now, '推送': meta.get('推送'), 'sha1': {f: hashlib.sha1(got[f]).hexdigest()[:12] for f in TB_FILES}}, open(me, 'w', encoding='utf-8'), ensure_ascii=False)
+    return '', ('锁读表换成最新：' + '、'.join(ch) + f'（旧的在 _bak-tongbu\\），' if ch else '锁读表已是最新，') + f'分支 {age:.1f} 小时前推送'
+
 def main(argv):
     val = lambda k, d=None: argv[argv.index(k) + 1] if k in argv and argv.index(k) + 1 < len(argv) else d
     out, jobs = val('--out'), int(val('--jobs', 2)); mode = 'both' if '--both' in argv else 'music' if '--music' in argv else ''
@@ -96,10 +147,14 @@ def main(argv):
     lock = out and os.path.join(out, '出片中.lock')
     if lock and os.path.exists(lock) and time.time() - os.path.getmtime(lock) < 2400: print('上一轮还在出片（', lock, '），这轮跳过'); return 0
     if lock: os.makedirs(out, exist_ok=True); open(lock, 'w').write(time.strftime('%Y-%m-%d %H:%M:%S'))
+    global TB_ERR
+    TB_ERR, msg = tongbu() if '--no-tongbu' not in argv else ('', '这轮不同步锁读表（--no-tongbu）')
+    print('锁读表同步：' + (msg or '拦下新条：' + TB_ERR))
     try: return run(argv, out, jobs, mode, tidy, keep, force)
     finally:
         if lock and os.path.exists(lock): os.remove(lock)
 
+TB_ERR = ''
 def run(argv, out, jobs, mode, tidy, keep, force):
     val = lambda k, d=None: argv[argv.index(k) + 1] if k in argv and argv.index(k) + 1 < len(argv) else d
     a = [x for i, x in enumerate(argv) if not x.startswith('--') and (i == 0 or argv[i - 1] not in ('--out', '--jobs', '--daily'))]
@@ -122,6 +177,7 @@ def run(argv, out, jobs, mode, tidy, keep, force):
                 if old == h:
                     open(d + 'src.sha', 'w').write(h); tm = json.load(open(d + 'tm.json', encoding='utf-8'))
                     R[ep].update({'秒': round(tm['dur'], 1), '字': sum(len(aud.han(''.join(c[0] for c in L['ch']))) for L in tm['lines'])}); ready.append(ep); FROZEN.add(ep); continue
+            if TB_ERR: raise SystemExit('锁读表不一定是最新，这条先不配音：' + TB_ERR)
             if not (keep and os.path.exists(f'{HERE}ep/{ep}/spec.json')): R[ep]['提醒'] = caiji2spec.one(IT[ep])
             dur, nh = aud.main(ep); R[ep].update({'秒': round(dur, 1), '字': nh}); ready.append(ep); open(d + 'src.sha', 'w').write(h)
         except (SystemExit, Exception) as e: R[ep]['原因'] = (str(e) or type(e).__name__).replace('\n', ' ')
