@@ -35,6 +35,12 @@ def render(job):
         if r.returncode or not os.path.exists(o + 'v.mp4'): return ep, None, '出片失败：' + one(r), 0
         m = subprocess.run([sys.executable, HERE + 'mix.py', ep] + ([mode] if mode else []), **RUN)
         if m.returncode or not all(os.path.exists(f) for f in fs): return ep, None, '配声失败：' + one(m), 0
+        z = subprocess.run([sys.executable, HERE + 'zicha_kd.py', ep], **RUN)      # 错题本自查（主人 11-19“自查没过的不出片”）：没过这条不交片，成片删掉免得被误取
+        if z.returncode:
+            for f in fs:
+                if os.path.exists(f): os.remove(f)
+            bad = [l.strip() for l in (z.stdout or '').splitlines() if l.strip().startswith(('不过', '回归', '进度条')) or l.startswith('      ')]
+            return ep, None, '错题本自查没过：' + '；'.join(bad[:4]), 0
         if tidy:
             for f in [o + 'v.mp4', o + 'a.wav'] + glob.glob(o + 'f_*.png'):
                 if os.path.exists(f): os.remove(f)
