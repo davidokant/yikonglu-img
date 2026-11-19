@@ -24,7 +24,7 @@ print(json.dumps({'推送': time.time(), '北京': time.strftime('%Y-%m-%d %H:%M
   'sha1': {f: hashlib.sha1(open(f'{d}/{f}', 'rb').read()).hexdigest()[:12] for f in ['phon.tsv', '锁读回归例句.tsv']}}, ensure_ascii=False))
 EOF
 for f in phon.tsv 锁读回归例句.tsv tongbu.json; do git update-index --add --cacheinfo 100644,$(git hash-object -w "$W/c/$f"),pojie/$f; done
-CH=$(git diff --cached --name-only HEAD | grep -v tongbu.json | tr '\n' ' ')
+CH=$(git -c core.quotePath=false diff --cached --name-only HEAD | grep -v tongbu.json | tr '\n' ' ')
 git -c user.name="Claude" -c user.email="noreply@anthropic.com" commit -q -m "锁读表同步${CH:+（换了 $CH）}
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
