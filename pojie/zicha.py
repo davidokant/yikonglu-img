@@ -39,6 +39,16 @@ def ct001_lou(a):
                 if not hit:bad.append(f"{s['id']} 漏锁「{t[max(0,p-6):p+6]}」应 {py}（{src}）")
                 elif hit[0][2].split()[p-hit[0][0]]!=py:bad.append(f"{s['id']} 锁成 {hit[0][2]}「{t[max(0,p-6):p+6]}」应 {py}")
     return bad
+def ct016(a):
+    """CT-016 送配同音替字替错调：送配文本命中 送配替字错.tsv 即拦"""
+    if not a.gao:return None
+    T=[l.rstrip('\n').split('\t') for l in open(os.path.join(HERE,'送配替字错.tsv'),encoding='utf-8') if l.strip() and not l.startswith('#')]
+    bad=[]
+    for f,s in segs(a.gao):
+        t=s.get('send_text','')
+        for x in T:
+            for m in re.finditer(x[0],t):bad.append(f"{s['id']} 送配替字错「{t[max(0,m.start()-6):m.end()+6]}」应 {x[1]}")
+    return bad
 def ct001_hou(a):
     """CT-001 读音·后加规则：配音早于某条锁读规则、该规则又命中本段 → 必须在 测调记录.tsv 里判过“对”或已补配"""
     if not a.gao:return None
@@ -127,7 +137,7 @@ def key(c):a,b=c.split('.');return (int(a),int(b))
 def ct006(a):
     """CT-006 章号朱注/通行本错位：稿首朱注章号经 分章对照表 换成通行本，发布单里“通行本 a—b”与英文 Analects a–b 都要对上"""
     if not (a.gao and a.dv):return None
-    g=[f for f in glob.glob(a.gao+'/*-稿-v*.md') if '预检' not in f]
+    g=[f for f in glob.glob(a.gao+'/*稿-v*.md') if '预检' not in f]
     if not g:return ['没找到稿']
     head=open(max(g,key=os.path.getmtime),encoding='utf-8').readline()
     m=re.search(r'(\d+\.\d+)\s*[—–-]\s*(\d+\.\d+)',head) or re.search(r'(\d+\.\d+)',head)
@@ -171,15 +181,60 @@ def ct011(a):
     if not tg:return None
     r=subprocess.run([sys.executable,os.path.join(ZC,'jingwen_zha.py')]+tg,capture_output=True,text=True)
     return [l for l in r.stdout.splitlines() if '\t错\t' in l][:20]
+def ct013(a):
+    """CT-013 白话加出原文朱注没有的细节：评审稿目录（--gao）跑 规范/自查/baihua_zha.py 词表闸，未放行命中须 0；退出码 2（解析不到白话）也算不过。命中逐条人判，等义或有据的记进 规范/自查/baihua_fangxing.tsv"""
+    if not a.gao:return None
+    z=os.path.join(os.path.dirname(HERE),'自查','baihua_zha.py')
+    r=subprocess.run([sys.executable,z,a.gao],capture_output=True,text=True)
+    if r.returncode==0:return []
+    L=[l for l in r.stdout.splitlines() if l.strip()][1:21]
+    return (L or (r.stdout+r.stderr).strip().splitlines()[-5:]) if r.returncode==1 else ['解析不到白话或没找到稿（退出码 2），不能当通过']+(r.stdout+r.stderr).strip().splitlines()[-3:]
+def ct020(a):
+    """CT-020 稿读音表写了“送配换X”或“锁/必锁”的字，在配音分段里每一处同语境都要落实：送配文本该位置是替字X，或被锁读表锁住（十一接班 11-20）"""
+    if not a.gao:return None
+    import difflib
+    g=[f for f in glob.glob(a.gao+'/*稿-v*.md') if '预检' not in f and not f.endswith('.bak')]
+    if not g:return None
+    g=max(g,key=os.path.getmtime);rows=[]
+    for l in open(g,encoding='utf-8'):
+        c=[x.strip() for x in l.strip().strip('|').split('|')]
+        if len(c)<4 or len(c[0])!=1:continue
+        m=re.search(r'送配(?:换|替成|替)[“"]?(.)',c[3]);lk=re.search(r'锁',c[3])
+        if not (m or lk):continue
+        for ctx in re.split(r'[、，,；/ ]+',c[1]):
+            ctx=ctx.strip('“”"…')
+            if c[0] in ctx and len(ctx)>=2:rows.append((c[0],ctx,m.group(1) if m else None))
+    if not rows:return []
+    R=load_rules(SK);bad=[]
+    for f,s in segs(a.gao):
+        if '补插科' in f:continue
+        T,S=s.get('text',''),s.get('send_text',s.get('text',''))
+        mp={}
+        for op,i1,i2,j1,j2 in difflib.SequenceMatcher(None,T,S,autojunk=False).get_opcodes():
+            if op in('equal','replace') and i2-i1==j2-j1:
+                for k in range(i2-i1):mp[i1+k]=j1+k
+        sp=lock_spans(S,R)
+        for ch,ctx,x in rows:
+            for m in re.finditer(re.escape(ctx),T):
+                i=m.start()+ctx.index(ch);j=mp.get(i)
+                if j is None:continue
+                if (x and S[j]==x) or any(a_<=j<b_ for a_,b_,_ in sp):continue
+                bad.append(f'{s["id"]}「{ctx}」的“{ch}”送配仍是“{S[j]}”，稿读音表要求'+(f'换“{x}”' if x else '锁读')+'，也没被锁读表锁住')
+    return sorted(set(bad))[:30]
 def yujian(a):
     """常规·渲前预检：稿目录里最新稿要有不早于它的 预检.md"""
     if not a.gao:return None
-    g=[f for f in glob.glob(a.gao+'/*-稿-v*.md') if '预检' not in f]
+    g=[f for f in glob.glob(a.gao+'/*稿-v*.md') if '预检' not in f]
     if not g:return ['没找到稿']
     g=max(g,key=os.path.getmtime);p=glob.glob(a.gao+'/*预检*.md')
     p=[x for x in p if os.path.getmtime(x)>=os.path.getmtime(g)-60]
     return [] if p else [f'最新稿 {os.path.basename(g)} 没有不早于它的预检单']
-CHECKS=[('CT-001a 读音漏锁',ct001_lou),('CT-001b 后加规则未测',ct001_hou),('CT-002 跨页红框',ct002),('CT-003 进度条',ct003),('CT-004 原页白边',ct004),('CT-005 英文章节书序',ct005),('CT-006 章号错位',ct006),('CT-007 锁读表回归',ct007),('CT-008 繁体误转',ct008),('CT-009 发布单',ct009),('CT-010 补配文字',ct010),('CT-011 经文逐字',ct011),('常规 渲前预检',yujian)]
+def ct022(a):
+    """CT-022 红框夹字：一个红框里夹着不讲的字（hongkuang 乙类 35% 线漏过的，如道德经 D16“絕聖棄智民利百倍絕仁棄義”只讲 8 字）。jiazi_zha.py 须 0"""
+    if not a.ep:return None
+    r=subprocess.run([sys.executable,os.path.join(HERE,'jiazi_zha.py'),a.ep],capture_output=True,text=True)
+    return [l.strip() for l in r.stdout.splitlines() if l.strip() and not l.startswith('==')][:20]
+CHECKS=[('CT-001a 读音漏锁',ct001_lou),('CT-001b 后加规则未测',ct001_hou),('CT-002 跨页红框',ct002),('CT-003 进度条',ct003),('CT-004 原页白边',ct004),('CT-005 英文章节书序',ct005),('CT-006 章号错位',ct006),('CT-007 锁读表回归',ct007),('CT-008 繁体误转',ct008),('CT-009 发布单',ct009),('CT-010 补配文字',ct010),('CT-011 经文逐字',ct011),('CT-013 白话增词',ct013),('CT-016 送配替字错',ct016),('CT-020 读音表替字落实',ct020),('CT-022 红框夹字',ct022),('常规 渲前预检',yujian)]
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('--gao');ap.add_argument('--ep');ap.add_argument('--dv');ap.add_argument('--kind',default='论语长片');ap.add_argument('--pb');ap.add_argument('--root');ap.add_argument('--xe');ap.add_argument('--bupei');ap.add_argument('--qi')
     a=ap.parse_args();rc=0
