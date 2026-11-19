@@ -1,0 +1,103 @@
+[
+ {
+  "id": "RD-20261120-91",
+  "chap": "13.17",
+  "pian": "子路",
+  "title": "缴够15年就能坐等退休？谣言",
+  "desc": "缴够十五年就能坐等退休是谣言：二〇三〇年起最低缴费年限逐步提高到二十年。孔子说：见小利，则大事不成。一孔录 yikonglu.com",
+  "tags": "#论语 #国学 #热点 #养老保险",
+  "when": "11:53",
+  "dur": 31.4,
+  "zh": "简",
+  "url": "https://yikonglu.com/lunyu/13.17",
+  "grade": "绿",
+  "approved": false,
+  "files": {
+   "成片": "RD-20261120-91.mp4"
+  },
+  "pojie": {
+   "带": "两招",
+   "撑开秒": 1.905,
+   "按停秒": 7.308,
+   "按停多久": 1.6,
+   "说明": []
+  },
+  "warn": [],
+  "hot": {
+   "title": "养老保险缴够15年就能坐等退休系谣言",
+   "links": [
+    "https://www.dzwww.com/xinwen/shehuixinwen/202611/t20261118_18313703.htm",
+    "https://news.china.com/socialgd/10000169/20261118/49885378.html"
+   ],
+   "risk": "辟谣出自厦门市人社局（11-18），依据《国务院关于渐进式延迟法定退休年龄的办法》：2030年起最低缴费年限每年提高半年，逐步到20年。片里不讲个人缴费建议细节，只讲“多缴多得”这一官方原则。"
+  }
+ },
+ {
+  "id": "RD-20261120-92",
+  "chap": "14.25",
+  "pian": "宪问",
+  "title": "大学英语改选修了，孔子怎么看",
+  "desc": "一所大学把大学英语改为选修，四六级、雅思托福可认定免修，没过线照样得上。孔子说：古之学者为己。一孔录 yikonglu.com",
+  "tags": "#论语 #国学 #热点 #大学英语",
+  "when": "12:27",
+  "dur": 32.8,
+  "zh": "简",
+  "url": "https://yikonglu.com/lunyu/14.25",
+  "grade": "绿",
+  "approved": false,
+  "files": {
+   "成片": "RD-20261120-92.mp4"
+  },
+  "pojie": {
+   "带": "两招",
+   "撑开秒": 0.855,
+   "按停秒": 7.819,
+   "按停多久": 1.6,
+   "说明": []
+  },
+  "warn": [],
+  "hot": {
+   "title": "江南大学将大学英语改为选修",
+   "links": [
+    "https://news.ifeng.com/c/8y9fBcn58pB",
+    "https://www.sohu.com/a/1103313715_118779"
+   ],
+   "risk": "不点校名；用校方 11-18 的说法（符合免修条件才可不上课），不说“英语取消了”。"
+  }
+ },
+ {
+  "id": "RD-20261120-93",
+  "chap": "4.24",
+  "pian": "里仁",
+  "title": "GTA6等了十三年，孔子十个字",
+  "desc": "GTA6 今天上线，离上一部隔了十三年。孔子说：君子欲讷于言而敏于行。一孔录 yikonglu.com",
+  "tags": "#论语 #国学 #热点 #GTA6",
+  "when": "12:58",
+  "dur": 28.1,
+  "zh": "简",
+  "url": "https://yikonglu.com/lunyu/4.24",
+  "grade": "黄（点游戏名，等主人点头）",
+  "approved": true,
+  "files": {
+   "成片": "RD-20261120-93.mp4"
+  },
+  "pojie": {
+   "带": "只带按停",
+   "撑开秒": null,
+   "按停秒": 6.391,
+   "按停多久": 1.6,
+   "说明": [
+    "第二行起的大字没有落在 0.8—2.6 秒里的（2.97 秒），不带小屏撑满"
+   ]
+  },
+  "warn": [],
+  "hot": {
+   "title": "GTA6正式上线",
+   "links": [
+    "https://www.rockstargames.com/newswire/article/ak3ak31a49a221/grand-theft-auto-vi-is-now-set-to-launch-november-19-2026",
+    "https://www.forbes.com/sites/brianmazique/2026/11/12/gta-6-unlocks-at-midnight-on-november-19-but-millions-of-americans-can-start-playing-the-night-before/"
+   ],
+   "risk": "点了游戏名，按规矩算黄档。这款游戏国内未上市、题材含犯罪暴力，片里只说“等了十三年”和打磨，不出游戏画面、不谈玩法。主人点“发”后加 approved:true 再进收件。 主人 11-19 08:29 北京点卡“发”。"
+  }
+ }
+]
