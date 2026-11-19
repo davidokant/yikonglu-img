@@ -1,0 +1,605 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>今问古答 · 大字快答模板</title>
+<style>
+/* 底子：字体（都在本目录 fonts/ 里）和“屏里的块一律绝对定位”这条约定 */
+@font-face{font-family:'SC';src:url(fonts/NotoSansSC_500Medium.ttf);font-weight:500}
+@font-face{font-family:'SC';src:url(fonts/NotoSansSC_700Bold.ttf);font-weight:700}
+@font-face{font-family:'SC';src:url(fonts/NotoSansSC_900Black.ttf);font-weight:900}
+@font-face{font-family:'Song';src:url(fonts/NotoSerifSC.ttf);font-weight:200 900}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#111}
+body{width:1080px}
+.scr{position:relative;width:1080px;height:1920px;overflow:hidden;font-family:SC,sans-serif}
+.scr div,.scr canvas,.scr svg,.scr b{position:absolute}
+.scr .row{display:flex}
+.scr .row>*{position:relative}
+canvas.fx{width:1080px;height:1920px}
+/* 大字快答模板（热点联经典短片，“活字”打法加强版）：kd.html?ep=<文案单目录名>（由 render.js 自带的网页服务打开，本目录自成一包，不靠外面的文件）
+   版面和动作全由 ep/<名>/spec.json（文案单）和 tm.json（配音逐字时间）生成；window.seek(秒) 逐帧取画面，不靠真实时钟。
+   层次：#shake 震屏 > #cam 慢推和色散 > #world 冲击缩放 > 五张色卡 / 牌下光效 / 字牌 / 牌上光效 */
+:root{--ink:#0d0d0e;--zhu:#d9391f;--bai:#f4f0e6;--huang:#ffcf33;--lv:#23503f}
+#scr{background:#050505}
+#shake,#cam,#world,#cards,#tiles{left:0;top:0;width:1080px;height:1920px}
+#tiles{pointer-events:none}
+canvas.fx{left:0;top:0;pointer-events:none}
+.card{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden;color:var(--fg);background:var(--bg)}
+.c1{--bg:var(--ink);--fg:#fff}.c2{--bg:var(--zhu);--fg:#fff6e6}.c3{--bg:var(--bai);--fg:#151515}.c4{--bg:var(--huang);--fg:#151515}.c5{--bg:var(--lv);--fg:#f4f0e6}
+.k{display:inline-block;white-space:nowrap}
+.fl{left:0;top:0;width:1080px;height:1920px;opacity:0;pointer-events:none;z-index:60}
+#dog{position:absolute;z-index:90;pointer-events:none;filter:drop-shadow(0 8px 14px rgba(0,0,0,.35))}#dogi{width:100%;height:100%}
+#hole{position:absolute;z-index:89;pointer-events:none;border-radius:50%;opacity:0;background:radial-gradient(ellipse at center,#0b0908 0 52%,rgba(11,9,8,.55) 66%,transparent 71%)}
+.rg{border-radius:50%;border:38px solid rgba(255,255,255,.92);pointer-events:none;opacity:0}
+/* 底纹：每张卡一层慢慢动的暗纹，不抢字 */
+.bg{left:-760px;top:-340px;width:2600px;height:2600px;pointer-events:none;will-change:transform}
+.c1 .bg{background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.13),transparent 42%)}
+.qm{left:300px;top:420px;font:900 1500px/1500px SC;color:transparent;-webkit-text-stroke:5px rgba(255,255,255,.075);pointer-events:none}
+.c2 .bg{background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.075) 0 7.5deg,transparent 7.5deg 15deg);-webkit-mask-image:radial-gradient(circle,#000 12%,transparent 58%)}
+.c5 .bg{background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.05) 0 6deg,transparent 6deg 12deg);-webkit-mask-image:radial-gradient(circle,#000 12%,transparent 58%)}
+.c3 .bg{background:radial-gradient(circle,rgba(21,21,21,.11) 0 5px,transparent 6px) 0 0/36px 36px;-webkit-mask-image:linear-gradient(135deg,transparent 38%,#000 78%)}
+.c4 .bg{background:repeating-linear-gradient(135deg,rgba(21,21,21,.075) 0 46px,transparent 46px 92px)}
+.hz{left:-200px;width:1600px;height:92px;background:repeating-linear-gradient(-45deg,#151515 0 44px,transparent 44px 88px)}
+.hz.a{top:0}.hz.b{top:1828px}
+/* 每张卡都有的：进度条、栏目名 */
+.pb{left:70px;top:246px;width:840px;height:8px;gap:10px}
+.pb i{position:relative;flex:1;height:8px;border-radius:4px;background:color-mix(in srgb,var(--fg) 28%,transparent);overflow:hidden}
+.pb i.d{background:var(--fg)}
+.pb i u{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--fg);border-radius:4px}
+.mk{left:70px;top:272px;height:40px;font:900 28px/40px SC;letter-spacing:6px;opacity:.9;white-space:nowrap}
+.bt{right:160px;top:272px;height:40px;font:700 26px/40px SC;letter-spacing:3px;opacity:.62;white-space:nowrap}
+.ft{left:70px;font:500 30px/42px SC;letter-spacing:1px;white-space:nowrap}
+.from{opacity:.85}.by{opacity:.72}
+/* 1 问 */
+.hot{left:70px;top:336px;width:50px;height:50px;border-radius:13px;background:var(--zhu);color:#fff;font:900 30px/50px SC;text-align:center}
+.pill{left:134px;top:336px;height:50px;padding:0 20px;border-radius:25px;border:2px solid rgba(255,255,255,.7);font:700 27px/46px SC;letter-spacing:1px;white-space:nowrap}
+.q0{left:70px;top:404px;width:840px;font:700 40px/1.4 SC;color:rgba(255,255,255,.86)}
+.c1t{left:70px;top:330px;font:900 86px/104px SC;letter-spacing:1px;white-space:nowrap}
+.c1t .k{transform-origin:0 60%}
+.g1{left:62px;top:560px;font:900 0px/0px SC;letter-spacing:-4px;white-space:nowrap}
+.g1 .k{transform-origin:12% 55%;font-size:216px;line-height:222px}
+.g1 .k i{display:inline-block;font-style:normal;transform-origin:50% 85%}
+.g1 .y,.c1t .y{color:var(--huang)}
+/* 2 答 */
+.w1{left:70px;top:330px;font:900 52px/64px Song;letter-spacing:4px;white-space:nowrap}
+.w2{left:70px;top:402px;font:500 37px/52px SC;opacity:.9;white-space:nowrap}
+.zy{left:70px;top:478px;font:900 60px/70px Song;letter-spacing:6px;opacity:.92}
+/* 3 译 */
+.h3{left:70px;top:326px;font:900 70px/90px SC;letter-spacing:2px;white-space:nowrap}
+.h3 em,.rw .mn em{font-style:normal;color:var(--zhu)}
+.rw{left:70px;width:840px;height:var(--bh)}
+.rw .mn{left:calc(var(--w3) + 32px);top:0;width:calc(808px - var(--w3));height:var(--bh);display:flex;align-items:center;font:900 62px/1.24 SC;white-space:nowrap}
+.rw .mn .k{transform-origin:0 50%}
+.rw .mn .y{color:var(--zhu);background:linear-gradient(rgba(255,207,51,.9),rgba(255,207,51,.9)) no-repeat 0 94%/0% 30%}
+.rw .mn .m{background:linear-gradient(rgba(255,207,51,.9),rgba(255,207,51,.9)) no-repeat 0 94%/0% 30%}
+.c3.stk .rw .mn{left:0;top:calc(var(--s3) + var(--t3));width:840px;height:calc(var(--f3)*1.24);font-size:var(--f3)}
+.n3{left:70px;font:500 30px/44px SC;color:rgba(21,21,21,.58);white-space:nowrap}
+/* 4 反转 */
+.h4{left:66px;top:322px;font:900 116px/130px SC;white-space:nowrap}
+.h4 .k{transform-origin:8% 50%}
+.h4b{left:62px;font:900 0px/0px SC;letter-spacing:-3px;white-space:nowrap;transform-origin:0 0}
+.h4b .k{transform-origin:12% 55%;font-size:200px;line-height:206px}
+.h4b .k i{display:inline-block;font-style:normal;color:var(--zhu);transform-origin:50% 78%}
+.qm4{left:300px;top:420px;font:900 1500px/1500px SC;color:transparent;-webkit-text-stroke:5px rgba(21,21,21,.065);pointer-events:none}
+.q4{left:70px;font:900 50px/66px Song;letter-spacing:3px;white-space:nowrap}
+.q4.n{font:900 72px/90px Song;letter-spacing:2px}
+.q4.n em{font-style:normal;color:var(--zhu)}
+.ch4{left:70px;top:470px;height:58px;white-space:nowrap;transform-origin:0 0}
+.ch4 .k{height:58px;padding:0 20px;border-radius:10px;background:#151515;color:var(--huang);font:900 31px/58px SC;letter-spacing:2px;transform-origin:0 50%}
+.b4t{left:70px;width:840px;height:262px;color:var(--huang);font:900 196px/256px Song;text-align:center;white-space:nowrap}
+.b4t .k{width:calc(var(--c4) - 12px);height:236px;margin:12px 6px 0;line-height:228px;font-size:calc(var(--c4)*.871);background:#151515;border-radius:26px;box-shadow:inset 0 -12px 0 rgba(255,255,255,.08),0 14px 24px rgba(0,0,0,.25)}
+.m4{left:66px;font:900 108px/142px SC;letter-spacing:-1px;white-space:nowrap}
+.m4 .k{transform-origin:10% 50%}
+.m4 .y{height:1.185em;line-height:1.148em;background:#151515;color:var(--huang);padding:0 14px;margin-left:6px;border-radius:10px;vertical-align:middle}
+.a4{left:70px;font:700 31px/50px Song;letter-spacing:2px;color:rgba(21,21,21,.66);white-space:nowrap}
+/* 5 定格：一张可以存下来的卡 */
+.cd{left:70px;top:330px;width:840px;border-radius:38px;background:var(--bai);color:#151515;box-shadow:0 30px 60px rgba(0,0,0,.28);overflow:hidden}
+.cd .t1{left:44px;top:40px;height:46px;padding:0 16px;border-radius:10px;background:var(--zhu);color:#fff6e6;font:900 28px/46px SC;letter-spacing:4px}
+.cd .q{left:44px;top:102px;font:900 54px/70px SC;white-space:nowrap}
+.cd .seal{right:40px;top:36px;width:112px;height:112px;background:url(assets/seal.png) center/contain no-repeat}
+.cd .t2{left:44px;top:204px;height:46px;padding:0 16px;border-radius:10px;border:3px solid var(--zhu);color:var(--zhu);font:900 26px/40px SC;letter-spacing:3px;white-space:nowrap}
+.cd .r{left:44px;width:752px;height:var(--rh)}
+.cd .r .b{top:0;font:700 41px/var(--rh) SC;white-space:nowrap}
+.cd .hr{left:44px;width:752px;height:3px;background:rgba(21,21,21,.14)}
+.cd .t3{left:44px;height:46px;padding:0 16px;border-radius:10px;background:var(--lv);color:var(--bai);font:900 26px/46px SC;letter-spacing:4px;white-space:nowrap}
+.cd .v{left:44px;font:900 58px/76px SC;white-space:nowrap}
+.cd .v .k{transform-origin:0 50%}
+.cd .v em{font-style:normal;color:var(--zhu)}
+.cd .u{left:44px;font:900 36px/46px SC;letter-spacing:3px;color:var(--zhu);white-space:nowrap}
+.cd .sw{left:-300px;top:-200px;width:220px;height:1600px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent);pointer-events:none}
+.sv{left:70px;font:900 50px/66px SC;letter-spacing:1px;white-space:nowrap}
+.sv .k{transform-origin:0 50%}
+.sv em{font-style:normal;color:var(--huang)}
+.cm{left:70px;font:700 38px/54px SC;opacity:.78;white-space:nowrap}
+.cd .u2{left:44px;font:700 30px/40px SC;letter-spacing:1px;color:#151515;white-space:nowrap}.cd .u2 em{font-style:normal;color:var(--zhu);font-weight:900}
+.fo{left:70px;height:52px;padding:0 20px 0 0;border-radius:26px;background:rgba(255,255,255,.14);font:800 31px/52px SC;letter-spacing:1px;white-space:nowrap;color:#fff}.fo i{font-style:normal;display:inline-block;margin-right:16px;padding:0 20px;border-radius:26px;background:var(--huang);color:#151515}
+/* 字牌：正面米白、背面墨绿的厚牌，立体翻转；金句一个字一块 */
+.tile,.tr,.tf,.tfa,.tba{left:0;top:0;width:250px;height:250px}
+.tile{transform-origin:0 0}
+.tsh{left:6px;top:22px;width:238px;height:238px;border-radius:44px;background:rgba(0,0,0,.42);filter:blur(13px)}
+.tr{perspective:1100px}
+.tf{transform-style:preserve-3d}
+.tfa,.tba{border-radius:34px;backface-visibility:hidden}
+.tfa{transform:translateZ(26px);background:#f6efdc;color:#151515;font:900 172px/240px Song;text-align:center;overflow:hidden;box-shadow:inset 0 -14px 0 rgba(0,0,0,.15),inset 0 6px 0 rgba(255,255,255,.75)}
+.tba{transform:rotateY(180deg) translateZ(26px);background:#2b6350;box-shadow:inset 0 -14px 0 rgba(0,0,0,.28),inset 0 6px 0 rgba(255,255,255,.16)}
+.tba{overflow:hidden;color:rgba(255,207,51,.8);font:900 132px/244px SC;text-align:center}
+.tba::after{content:'';position:absolute;left:36px;top:36px;right:36px;bottom:36px;border-radius:18px;border:7px solid rgba(255,207,51,.6)}
+.glb{left:0;top:-40px;width:90px;height:330px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-340px) skewX(-20deg)}
+.ts.l,.ts.r{left:99px;top:30px;width:52px;height:190px}
+.ts.t,.ts.b{left:30px;top:99px;width:190px;height:52px}
+.ts.r{transform:rotateY(90deg) translateZ(125px);background:linear-gradient(90deg,#e6dcc2 0 52%,#214c3d 52%)}
+.ts.l{transform:rotateY(-90deg) translateZ(125px);background:linear-gradient(90deg,#214c3d 0 48%,#e6dcc2 48%)}
+.ts.t{transform:rotateX(90deg) translateZ(125px);background:linear-gradient(180deg,#214c3d 0 48%,#e6dcc2 48%)}
+.ts.b{transform:rotateX(-90deg) translateZ(125px);background:linear-gradient(180deg,#e6dcc2 0 52%,#214c3d 52%)}
+.gl{left:0;top:-40px;width:110px;height:330px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent)}
+#yy{left:0;top:0;width:1080px;height:1920px;pointer-events:none}
+#yy.fly{perspective:1100px;perspective-origin:540px 900px}
+#yy .yc{left:0;top:0;width:1080px;height:1920px;transform-style:preserve-3d}
+#yy.flat .yc{clip-path:inset(440px 80px 490px 80px round 14px)}
+#yy .ypn{left:64px;top:424px;width:952px;height:1022px;background:#efe6d2;border-radius:22px;box-shadow:0 30px 70px rgba(0,0,0,.45);opacity:0}
+#yy .yp{left:0;top:0;transform-style:preserve-3d;opacity:1}
+#yy .yp img{position:absolute;left:0;top:0;filter:sepia(.6) brightness(.97) contrast(1.05)}
+#yy .yb{border:6px solid #ff3b1f;border-radius:6px;opacity:0;height:0}
+#yy .yg{opacity:0;background-color:#f2ead8;border-radius:6px;filter:sepia(.6) brightness(.97) contrast(1.1)}
+#yy .ygs{left:0;top:0;opacity:0;transform-origin:0 0;background-color:#f6efdc;border-radius:8px;box-shadow:0 10px 24px rgba(0,0,0,.35);filter:sepia(.2) contrast(1.1)}
+#yy .ysky{left:0;top:0;width:1080px;height:1920px;opacity:0;background:radial-gradient(ellipse at 50% 46%,#336f58 0,#183d30 52%,#08160f 100%)}
+#yy .ycl{opacity:0;border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,255,255,.92) 0,rgba(240,246,242,.6) 34%,rgba(240,246,242,0) 70%)}
+#yy .yt{left:96px;top:458px;opacity:0;background:#151515;color:#f4f0e6;font:700 34px/56px SC,sans-serif;padding:0 22px;border-radius:10px;white-space:nowrap;z-index:5}
+#yy.fly .yt{left:70px;top:236px}
+#yy .yt i{font-style:normal;color:#ffcf33;margin-left:10px}
+#scr.fa{background:radial-gradient(ellipse at 50% 46%,#336f58 0,#183d30 52%,#08160f 100%)}
+#scr.fa #world{perspective:1500px;perspective-origin:540px 900px}
+#scr.fa #cards{transform-style:preserve-3d}
+#scr.fa .card{perspective:1100px;perspective-origin:540px 800px}
+#scr.fa .card div{transform-style:preserve-3d}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><filter id="ca" x="-4%" y="-2%" width="108%" height="104%" color-interpolation-filters="sRGB">
+  <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/><feOffset id="caR" in="r" dx="-12" dy="0" result="ro"/>
+  <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+  <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/><feOffset id="caB" in="b" dx="12" dy="0" result="bo"/>
+  <feBlend in="ro" in2="g" mode="screen" result="rg"/><feBlend in="rg" in2="bo" mode="screen"/></filter></svg>
+<div class="scr" id="scr"><div id="shake"><div id="cam"><div id="world">
+  <div id="cards"></div><canvas class="fx" id="fxb" width="1080" height="1920"></canvas><div id="tiles"></div><div id="yy"></div><canvas class="fx" id="fxf" width="1080" height="1920"></canvas>
+</div></div></div><div id="hole"></div><div id="dog"><div id="dogi"></div></div></div>
+<script src="dog.js"></script><script src="sg.js"></script><script src="chars.js"></script>
+<script>
+(async()=>{
+const EP=new URLSearchParams(location.search).get('ep');
+const J=n=>fetch(`ep/${EP}/${n}.json`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(`读不到 ep/${EP}/${n}.json`);return r.json()});
+const [S,TM]=await Promise.all([J('spec'),J('tm')]);
+// 说话的柯基：位置 ?dog=左,上,边长（像素，1080×1920 里），?dog=off 不放；默认右下角、大字区里头（避开各平台按钮和字幕区）
+const DQ=new URLSearchParams(location.search).get('dog')||'',DOGON=DQ!='off',DP=(DQ&&DOGON?DQ:'724,1236,200').split(',').map(Number);
+const DENV=DOGON?await dogEnv(`ep/${EP}/voice.wav`).catch(()=>null):null;
+// 张嘴＝逐字时间给每个字一开一合，再乘这一刻的响度（字念得重嘴张得大）；没在念字就闭嘴
+const WHO=new URLSearchParams(location.search).get('who')||S.who||'dog',AV=WHO=='youli'||WHO=='sg'?sgSVG:(typeof AVA!='undefined'&&AVA[WHO])||dogSVG;   // 说话的是谁：文案单 who 栏（dog 柯基、youli 上官有理、zhaojin、shouzhuo、luchuan、liuqi、shahela）
+const DCH=TM.lines.flatMap(l=>l.ch||[]).filter(c=>c[2]>c[1]).sort((a,b)=>a[1]-b[1]);
+const dogMouth=(t,f)=>{let c=null;for(const x of DCH){if(x[1]>t)break;if(t<x[2]+.03)c=x}if(!c)return 0;
+  const d=Math.max(c[2]-c[1],.09),p=Math.min(1,(t-c[1])/d),sh=Math.sin(Math.PI*Math.min(1,p*1.1))**.7,ld=DENV?DENV[Math.min(f,DENV.length-1)]||0:.8;return sh*(.35+.65*ld)};
+await Promise.all(['900 40px SC','700 40px SC','500 40px SC','900 40px Song','700 40px Song'].map(f=>document.fonts.load(f,'一孔录今问古答？')));
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const L={};TM.lines.forEach(l=>L[l.role]=l);const A=[],SFX=[],CHK=[],FX=[],CAS=[];
+const EO='cubic-bezier(.16,1,.3,1)',BO='cubic-bezier(.34,1.56,.64,1)',EI='cubic-bezier(.5,0,.95,.5)';
+let seed=11;const R=()=>{seed=seed*16807%2147483647;return seed/2147483647};
+
+// ———— 一、照文案单生成五张卡 ————
+const KEY=S.quote.key.map(g=>[...g]),CH=KEY.flat(),N=CH.length,G=KEY.length,COLS=Math.max(...KEY.map(g=>g.length)),GI=[],CI=[],GE=[];
+KEY.forEach((g,gi)=>g.forEach((c,ci)=>{GI.push(gi);CI.push(ci);GE.push(ci==g.length-1)}));
+const NUM=n=>n<=10?'零一二三四五六七八九十'[n]:n<20?'十'+'零一二三四五六七八九'[n-10]:String(n);
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;'),hl=s=>esc(s).replace(/\*(.+?)\*/g,'<em>$1</em>');
+// 文案单里的小记号：开头“/”另起一行；开头“*”整块高亮；“*字*”块内高亮；“屏上字@口播里的字”＝屏上字和口播不一样时，指明它跟着口播里哪几个字出
+const dsp=s=>{const i=s.indexOf('@');return i<0?s:s.slice(0,i)},cue=s=>{const i=s.indexOf('@');return i<0?s:s.slice(i+1)};
+const ks=a=>a.map(s=>{s=dsp(s);let br='',y='';if(s[0]=='/'){br='<br>';s=s.slice(1)}if(s[0]=='*'&&s.indexOf('*',1)<0){y=' y';s=s.slice(1)}return `${br}<span class="k${y}">${hl(s)}</span>`}).join('');
+const nl=a=>1+a.filter(s=>s[0]=='/').length,k1=s=>`<span class="k">${hl(dsp(s))}</span>`,opt=(v,h)=>v?h(esc(v)):'';
+// 背景那一句可以不要（或只上屏不念）；白话每行可以是一句话，也可以拆成几块；金句三组以内，第 3 张卡用上牌下字的大排法，四组才左牌右字
+const ST=S.story||{},ROWS=S.gloss.rows.map(r=>Array.isArray(r)?r:[r]),ST3=G<=3;
+const han=s=>(String(s).match(/[一-鿿0-9A-Za-z]/g)||[]).join(''),DG=s=>s.replace(/[0-9]/g,d=>'零一二三四五六七八九'[d]);   // 能对拍的字：汉字、数字、字母
+// 注家原话要是口播里念了（NAR），第 4 张卡换一种排法：出处做成一块黑签，原话放大、按分句排一两行、跟着念的速度划出来
+const cls=s=>s.match(/[^，。？！；：、]+[，。？！；：、]*/g)||[s],SRC=S.twist.src||'',NAR=!!SRC&&L.twist.ch.map(c=>c[0]).join('').includes(han(SRC));
+const SC=cls(SRC),SB=(()=>{if(SC.length<2||SRC.length<=10)return 0;let b=1,d=1e9;for(let k=1;k<SC.length;k++){const x=Math.abs(SC.slice(0,k).join('').length-SC.slice(k).join('').length);if(x<d){d=x;b=k}}return b})();   // 第二行从第几个分句起
+const srcH=NAR?SC.map((c,i)=>`${i&&i==SB?'<br>':''}<span class="k">${esc(c).replace(esc(S.twist.big),`<em>${esc(S.twist.big)}</em>`)}</span>`).join(''):esc(SRC);
+// 反转的问句先当一张整屏海报砸出来（一两行大字），再缩回顶上当标题。连问号四个字以内排一行；再长排两行：文案单里用“/”标了断行处就照它断，
+// 没标就用浏览器自带的分词找词缝，挑两行最接近一样长的那条缝（不会把一个词劈成两半）
+const HEAD=dsp(S.twist.head).replace(/\*/g,''),HL=(()=>{if(HEAD.includes('/'))return HEAD.split('/').filter(x=>x);const n=HEAD.length;if(n<=4)return [HEAD];
+  let cut=[];try{let p=0;for(const s of new Intl.Segmenter('zh',{granularity:'word'}).segment(HEAD)){if(p&&han(s.segment))cut.push(p);p+=s.segment.length}}catch(e){}
+  if(!cut.length)cut=[Math.ceil(n/2)];const b=cut.reduce((a,x)=>Math.abs(x-n/2)<Math.abs(a-n/2)?x:a);return [HEAD.slice(0,b),HEAD.slice(b)]})();
+const pb=k=>`<div class="pb row">${[0,1,2,3,4].map(i=>i<k?'<i class="d"></i>':i==k?'<i><u></u></i>':'<i></i>').join('')}</div><div class="mk">${esc(S.lan||'今问古答')}</div>`;
+$('#cards').innerHTML=`
+<section class="card c1"><div class="bg"></div><div class="qm">？</div>${pb(0)}<div class="bt"></div>
+  <div class="hot">热</div><div class="pill">${esc(S.heat||'热搜话题')}</div><div class="q0">${esc(S.ask.full)}</div><div class="c1t">${ks(S.hook.show)}</div>
+  <div class="g1">${ks(S.ask.big.map((s,i)=>i?'/'+s:s))}</div></section>
+<section class="card c2"><div class="bg"></div>${pb(1)}${opt(ST.when,v=>`<div class="w1"><span class="k">${v}</span></div>`)}<div class="w2">${ks(ST.show||[])}</div>
+  ${opt(S.quote.lead,v=>`<div class="zy"><span class="k">${v}</span></div>`)}<div class="ft from">${esc(S.quote.from)}</div></section>
+<section class="card c3${ST3?' stk':''}"><div class="bg"></div>${pb(2)}<div class="h3">${k1(S.gloss.title||`${NUM(N)}个字，*拆开看*`)}</div>
+  ${ROWS.map(r=>`<div class="rw"><div class="mn"><span>${ks(r)}</span></div></div>`).join('')}${opt(S.gloss.basis,v=>`<div class="n3">${v}</div>`)}</section>
+<section class="card c4"><div class="bg"></div><div class="qm4">？</div><div class="hz a"></div><div class="hz b"></div>${pb(3)}<div class="h4">${k1(S.twist.head.replace(/\//g,''))}</div>
+  <div class="h4b">${HL.map((s,i)=>`${i?'<br>':''}<span class="k">${esc(s).replace(/([？?])$/,'<i>$1</i>')}</span>`).join('')}</div>
+  ${NAR&&S.twist.by?`<div class="ch4"><span class="k">${esc(S.twist.by.replace(/^[—\-– ]+/,''))}</span></div>`:''}${SRC?`<div class="q4${NAR?' n':''}">${srcH}</div>`:''}
+  <div class="b4t">${[...S.twist.big].map(c=>`<span class="k">${c}</span>`).join('')}</div><div class="m4">${ks(S.twist.show)}</div>
+  ${opt(S.twist.more,v=>`<div class="a4">${v}</div>`)}${NAR?'':opt(S.twist.by,v=>`<div class="ft by">${v}</div>`)}</section>
+<section class="card c5"><div class="bg"></div>${pb(4)}<div class="cd"><div class="t1">${esc(S.view.tag||'今问')}</div><div class="q">${esc(S.view.ask||S.ask.say)}</div><div class="seal"></div><div class="t2">${esc(S.view.cite)}</div>
+  ${S.view.rows.map(b=>`<div class="r"><div class="b">${esc(b)}</div></div>`).join('')}
+  <div class="hr"></div><div class="t3">一孔之见</div><div class="v">${ks(S.view.show)}</div><div class="u">一生一本《论语》</div><div class="u2">一孔录　<em>yikonglu.com</em></div><div class="sw"></div></div>
+  <div class="sv">${k1(S.view.save)}</div><div class="cm">${esc(S.view.talk)}</div><div class="fo"><i>关注</i>每天一件热点，配一句老话</div></section>`;
+
+// ———— 二、版面：字数不同，自动缩字、挪位 ————
+const scr=$('#scr'),V=(k,v)=>scr.style.setProperty('--'+k,v+'px');
+const rw=el=>{const r=document.createRange();r.selectNodeContents(el);return r.getBoundingClientRect()};
+// 一块字超宽就整块缩字号（行高跟着缩），缩到下限还超就记一条
+function fit(el,max,min,name,keepLH){const cs=getComputedStyle(el),f0=parseFloat(cs.fontSize),lh=parseFloat(cs.lineHeight)/f0;let f=f0,w=rw(el).width;
+  while(w>max&&f>min){f=Math.max(min,Math.floor(f*max/w));el.style.fontSize=f+'px';if(lh&&!keepLH)el.style.lineHeight=(f*lh).toFixed(1)+'px';w=rw(el).width}
+  if(w>max+1)CHK.push(`${name}：字太多，缩到 ${f}px 还超宽（${Math.round(w)}＞${max}）`)}
+const top=(el,y)=>{el.style.top=Math.round(y)+'px';return Math.round(y)},lh=el=>parseFloat(getComputedStyle(el).lineHeight);
+// 字牌大盘：一块最大 250，按列数、行数缩；行数少就在中间上下居中
+const S2=Math.min(250,Math.floor((860-(COLS-1)*16)/COLS),Math.floor((782-(G-1)*16)/G)),P2=S2+16,GW=COLS*S2+(COLS-1)*16,GH=G*S2+(G-1)*16,X2=490-GW/2,Y2=560+(782-GH)/2,GC=[490,Y2+GH/2];
+// 海报大字的排法：一行一个字号，各自撑到差不多满宽（最大的不超过最小的 1.22 倍，也不超过 300px），总高不超过 maxH。给回 [总高, 字最多那一行能排多大]
+function poster(kk,maxH){const own=kk.map(k=>{k.style.fontSize='200px';k.style.lineHeight='206px';return 200*850/rw(k).width}),base=Math.min(...own);
+  let sz=own.map(o=>Math.min(o,base*1.22,300)),H=sz.reduce((a,b)=>a+b*1.03,0);if(H>maxH){sz=sz.map(s=>s*maxH/H);H=maxH}
+  kk.forEach((k,i)=>{let s=sz[i];for(let j=0;j<30;j++){k.style.fontSize=s.toFixed(1)+'px';k.style.lineHeight=(s*1.03).toFixed(1)+'px';if(rw(k).width<=850)break;s*=.985}});return [H,base]}
+// 1 问：开头大字照海报排法，整块对着字牌大盘的中心放，等着被牌砸
+{const c=$('.c1'),g=$('.g1',c),kk=$$('.k',g),q0=$('.q0',c);if(!kk[0].children.length)kk[0].innerHTML=[...kk[0].textContent].map(x=>`<i>${esc(x)}</i>`).join('');   // 第一行拆成一个个字，念到时逐字跳
+ const [H,base]=poster(kk,860);
+ if(base<140)CHK.push(`开头大字：有一行字太多，只能排到 ${Math.round(base)}px（下限 140px）`);top(g,Math.max(560,GC[1]-H/2));
+ fit($('.c1t',c),850,56,'钩子');if(q0.offsetTop+q0.offsetHeight>548)CHK.push('原题太长：顶上那行原题超过两行')}
+// 2 答：“子曰”紧贴在字牌大盘上面；背景那一两行在顶上
+{const c=$('.c2'),w1=$('.w1',c),w2=$('.w2',c),zy=$('.zy',c);if(w1)fit(w1,850,40,'背景第一行');else top(w2,336);fit(w2,850,30,'背景第二行');if(zy)top(zy,Y2-82);top($('.from',c),Y2+GH+18);
+ if(w2.offsetHeight&&w2.offsetTop+w2.offsetHeight>(zy?Y2-82:Y2)-4)CHK.push('背景那几行太长，压到“子曰”或字牌了')}
+// 3 译：金句几组就几行。三组以内＝上面一行大字牌、下面大字白话（一两组的牌最大 180、字 110；三组的牌最大 132、字 96）；四组＝左边一行小字牌、右边白话
+const g3=ST3?12:9,W3=COLS<=3?340:COLS==4?380:420,sB=Math.min(G<=2?180:132,Math.floor((840-(COLS-1)*12)/COLS)),F3=G<=2?110:96;
+const pitch=ST3?sB+(G<=2?220:168):Math.floor(740/G),bh=ST3?sB+(G<=2?156:138):pitch-28,s3=ST3?sB:Math.min(104,Math.floor((W3-(COLS-1)*9)/COLS),bh-24),Y3=g=>452+g*pitch+(ST3?0:(bh-s3)/2);
+{const c=$('.c3'),n3=$('.n3',c);V('bh',bh);V('w3',W3);V('s3',s3);V('f3',F3);V('t3',G<=2?20:14);fit($('.h3',c),850,48,'译卡标题');
+ if(ST3)$$('.rw br',c).forEach(b=>b.replaceWith(''));   // 上牌下字时，每行白话只排一行
+ $$('.rw',c).forEach((r,i)=>{top(r,452+i*pitch);fit($('.mn>span',r),ST3?840:808-W3,40,`译卡第 ${i+1} 行`);if(!/\*/.test(ROWS[i].join('')))$$('.k',r).forEach(k=>k.classList.add('m'))});   // 没标高亮的行：整行底下划一道黄
+ if(ST3){const sp=$$('.rw .mn>span',c),f=Math.min(...sp.map(x=>parseFloat(getComputedStyle(x).fontSize)));sp.forEach(x=>{x.style.fontSize=f+'px';x.style.lineHeight=(f*1.24).toFixed(1)+'px'})}   // 几行白话用一样大的字，照最挤的那一行
+ if(n3)top(n3,452+(G-1)*pitch+bh+(ST3?30:46))}
+// 4 反转
+let Y4,H4,C4W=0,QI=null;{const c=$('.c4'),K=[...S.twist.big].length,q4=$('.q4',c),m=$('.m4',c),a4=$('.a4',c),by=$('.by',c),hb=$('.h4b',c),ch=$('.ch4 .k',c);V('c4',Math.min(202,Math.floor(820/K)));fit($('.h4',c),850,72,'反转问句');let y=470;
+ // 问句海报：连同它下面的出处黑签，上下居中摆在安全区里
+ {const [h,base]=poster($$('.k',hb),640);if(ch)C4W=ch.getBoundingClientRect().width;H4=[top(hb,835-(h+(ch?130:0))/2),h];const qi=$('i',hb);if(qi){const r=qi.getBoundingClientRect();QI=[r.left+r.width/2,r.top+r.height/2]}if(base<100)CHK.push(`反转问句太长：当海报排只能排到 ${Math.round(base)}px（下限 100px），请缩短问句`)}
+ if(NAR){if($('.ch4',c))y+=76;fit(q4,850,40,'注家原话');top(q4,y);y+=(SB?2:1)*lh(q4)+18}   // 口播念原话：黑签一行，原话一两行
+ else if(q4){fit(q4,850,34,'反转出处句');top(q4,y);y+=96}else y+=16;Y4=top($('.b4t',c),y);fit(m,850,76,'反转大白话');y=top(m,y+300)+nl(S.twist.show)*lh(m)+26;if(a4){fit(a4,850,24,'反转补充句');top(a4,y);y+=56}else y+=10;if(by){fit(by,850,24,'反转出处');top(by,y)}}
+// 5 定格
+let O5=0;const p5=G<=3?100:75,rh=p5-4,s5=({1:76,2:76,3:76,4:68,5:60})[COLS]||52,P5=s5+8,Y5=g=>330+O5+262+g*p5+(rh-s5)/2;
+{const c=$('.c5'),d=$('.cd',c),bl=COLS*P5+28,v=$('.v',d),sv=$('.sv',c),cm=$('.cm',c);V('rh',rh);fit($('.q',d),590,40,'收藏卡问句');
+ $$('.r',d).forEach((r,i)=>{top(r,262+i*p5);const b=$('.b',r);b.style.left=bl+'px';fit(b,752-bl,28,`收藏卡第 ${i+1} 行`,1)});
+ let y=262+G*p5+12;top($('.hr',d),y);top($('.t3',d),y+26);fit(v,752,44,'一孔之见');top(v,y+86);y=y+86+nl(S.view.show)*lh(v)+14;top($('.u',d),y);{const u=$('.u',d),u2=$('.u2',d);top(u2,y+6);u2.style.left=(44+u.getBoundingClientRect().width+26)+'px'}d.style.height=(y+62)+'px';   // 主口号和名字网址排一行
+ fit(sv,850,40,'收藏句');fit(cm,850,30,'评论句');{const room=1444-(330+y+62+26+76+54+76);O5=room>=0?Math.min(110,Math.floor(room/2)):Math.max(-16,room)}   // 卡太高放不下片尾那条“关注”，整张卡往上提，最多提 16 像素（再多就碰顶上“今问古答”）   // 卡矮（金句行数少）就整体往下挪一点，上下留白匀称
+ top(d,330+O5);y=330+O5+y+62+26;top(sv,y);top(cm,y+76);top($('.fo',c),y+76+59)}
+// 字牌在三处的位置：[左, 上, 缩放]——大盘（第 1、2 张卡）、左栏（第 3 张）、收藏卡（第 5 张）
+const TLay={2:i=>[X2+CI[i]*P2,Y2+GI[i]*P2,S2/250],3:i=>[70+CI[i]*(s3+g3),Y3(GI[i]),s3/250],5:i=>[114+CI[i]*P5,Y5(GI[i]),s5/250]};
+// 每块字的中心（给光效找落点）；顺手查安全区（左右 60—920，上下 230—1440）
+const RC=new Map();$$('#cards .k').forEach(k=>{const r=k.getBoundingClientRect();RC.set(k,[r.left+r.width/2,r.top+r.height/2])});
+$$('.card').forEach((c,ci)=>$$('.pill,.q0,.g1,.c1t,.w1,.w2,.zy,.from,.h3,.mn>span,.n3,.h4,.h4b,.ch4,.q4,.b4t,.m4,.a4,.by,.sv,.cm,.fo',c).forEach(el=>{const a=rw(el),b=el.getBoundingClientRect(),r={left:a.left,right:a.right,width:a.width,top:Math.max(a.top,b.top),bottom:Math.min(a.bottom,b.bottom)};   // 左右量字本身；上下取字和盒子里紧的那个（行距压得紧时，字的量法会把字体自带的上下留白也算进去）
+  if(r.width&&(r.left<58||r.right>924||r.top<228||r.bottom>1444))CHK.push(`第 ${ci+1} 张卡“${el.textContent.trim().slice(0,8)}”出了安全区：左 ${r.left|0} 右 ${r.right|0} 上 ${r.top|0} 下 ${r.bottom|0}`)}));
+if(X2<58||Y2+GH>1444)CHK.push('字牌大盘出了安全区');
+
+// ———— 三、对拍：屏上每块字什么时候出，照口播里同样的字找时间 ————
+// Q(哪一句) 给一个查时间的函数 f(屏上字, 找法)：找法 0＝一定要找到，找不到就报错；1＝找不到就给空，由版面自己定时间；2＝只看一眼，不把游标往后挪
+function Q(role){const l=L[role];if(!l)return null;const str=l.ch.map(c=>c[0]).join('');let pos=0;
+  const idx=(txt,m=0)=>{const h=han(cue(txt));let i=h?str.indexOf(h,pos):-1;if(i<0&&/[0-9]/.test(h))i=str.indexOf(DG(h),pos);   // 屏上是“123456”、口播念“一二三四五六”也算对上
+    if(i<0){if(m)return -1;throw Error(`屏上的“${dsp(txt)}”在口播“${l.text}”里找不到（从第 ${pos+1} 个字往后找）。屏上字和口播不一样时，写成“屏上字@口播里的字”`)}
+    if(m<2)pos=i+h.length;return i};
+  const f=(txt,m)=>{const i=idx(txt,m);return i<0?null:l.ch[i][1]};f.idx=idx;f.ch=l.ch;f.pos=()=>pos;return f}
+const need=r=>{const q=Q(r);if(!q)throw Error('时间线里没有这一句：'+r);return q};
+const qa=need('ask'),qh=need('hook'),qs=Q('story'),qq=need('quote'),qg=need('gloss'),qt=need('twist'),qv=need('view');
+// 开头大字：第一行开场就砸（第一帧不能空着）；后面几行跟口播走，口播里没有同样的字，就落在后面几个分句的开头（最后一行落在最后一个分句）
+const CL=[0];{let n=0;for(const c of L.ask.text){if(han(c))n++;else if(/[，。？！；：、,.?!;:]/.test(c)&&n<L.ask.ch.length&&CL[CL.length-1]!=n)CL.push(n)}}
+const iA0=qa.idx(S.ask.big[0],1);   // 第一行的字在口播里的位置：要是晚于开场才念到，念到时这一行再逐字跳一遍
+const tAsk=[];S.ask.big.forEach((s,i,a)=>{let t=L.ask.t0;if(i){t=qa(s,1);if(t==null){const k=Math.max(1,CL.length-(a.length-i));t=k<CL.length?L.ask.ch[CL[k]][1]:L.ask.t0+(L.ask.t1-L.ask.t0)*i/a.length}t=Math.max(t,tAsk[i-1]+.3)}tAsk.push(t)});
+const tHook=S.hook.show.map(s=>qh(s)),tWhen=qs&&ST.when?qs(ST.when,1):null,tStory=(ST.show||[]).map(s=>qs?qs(s,1):null),tLead=S.quote.lead?qq(S.quote.lead,1):null;
+const KT=[];S.quote.key.forEach(g=>{const i=qq.idx(g);[...g].forEach((c,k)=>KT.push(qq.ch[i+k][1]))});
+const tRows=ROWS.map(r=>r.map(s=>qg(s,1)));
+// 反转问句：整句在口播里找到了，海报上每一行就对到它头一个字念出来的时刻；找不到（屏上字和口播不一样）就从这一句开头起
+const iH=qt.idx(S.twist.head.replace(/\//g,''),1),tHL=HL.map((s,i)=>iH<0?null:(qt.ch[iH+han(HL.slice(0,i).join('')).length]||[])[1]??null),tHead=tHL[0]??L.twist.t0;
+// 注家原话：口播里念了，就记下从哪念到哪；大词在口播里（多半就在原话里），黑牌跟着念到的字落
+let tSrc=null,tAttr=null,tCl=null;if(NAR){const i=qt.idx(SRC,2),p=qt.pos();tSrc=[qt.ch[i][1],qt.ch[i+han(SRC).length-1][2]];tAttr=p<i?qt.ch[p][1]:tSrc[0]-.5;   // 问句和原话之间念的那几个字（“朱熹说”）一响，出处签砸出来
+  let a=i;tCl=SC.map(c=>{const n=han(c).length,r=[qt.ch[a][1],qt.ch[a+n-1][2]];a+=n;return r})}   // 原话每个分句从哪念到哪
+const iB=qt.idx(S.twist.big,1),tBig=iB<0?null:[...S.twist.big].map((c,k)=>qt.ch[iB+k][1]);
+const tShow=S.twist.show.map(s=>qt(s)),tView=S.view.show.map(s=>qv(s));
+const iN=Math.max(0,S.hook.show.findIndex(s=>/^\/?\*[^*]+$/.test(dsp(s)))),tN=tHook[iN];   // 钩子里高亮的那一块（“九个字”）一响，字牌砸下来
+// 换卡时刻：钩子说完、原文念完、白话讲完、反转讲完
+const X=[L.hook.t1-.06,L.gloss.t0-.28,L.gloss.t1-.02,L.twist.t1-.02],CS=[0,X[0]+.15,X[1]+.15,X[2]+.15,X[3]+.15,TM.dur];   // 第二刀跟着白话开讲的时刻走：金句全翻开以后要停一拍
+// 破界“主持人按停”（主人 11-19 定）：配音时间线在钩子后已留出 PZ[1] 秒（aud.py 写进 tm.json 的 fx.pause＝[停的时刻, 停多久]）；这段画面定格在 PZ[0]，第一刀挪到停完那一刻
+const PZ=TM.fx&&TM.fx.pause||null,LAND=!!(TM.fx&&TM.fx.land);if(PZ){X[0]=PZ[0]+PZ[1];CS[1]=X[0]+.15}
+
+// ———— 四、动作和光效的零件 ————
+function an(el,kf,at,dur,o={}){const a=el.animate(kf,{fill:'both',easing:'linear',...o,delay:at*1000,duration:dur*1000});a.pause();A.push(a);return a}
+function sfx(t,type,g=1,p=1){SFX.push({t:+t.toFixed(3),type,g,p})}
+function shake(t,amp=16,dur=.22){const n=Math.max(3,Math.round(dur*30)),kf=[];for(let i=0;i<=n;i++){const d=amp*(1-i/n)**1.5;kf.push({transform:i==n?'translate(0px,0px)':`translate(${((R()*2-1)*d).toFixed(1)}px,${((R()*2-1)*d).toFixed(1)}px)`})}an($('#shake'),kf,t,dur,{fill:'none'})}
+function flash(t,a=.3,dur=.13,col='#fff'){const f=document.createElement('div');f.className='fl';f.style.background=col;scr.appendChild(f);an(f,[{opacity:a},{opacity:0}],t,dur,{fill:'none'})}
+const RGB='-16px 0 0 rgba(255,0,70,.85),16px 0 0 rgba(0,225,255,.85)',RGB0='0px 0 0 rgba(255,0,70,0),0px 0 0 rgba(0,225,255,0)';
+function slam(el,t,s=2.2,dur=.17,rgb=0){if(FA){an(el,[{opacity:0,transform:`translateZ(${-1500*Math.min(1,s/2.2)}px)`},{opacity:1,transform:'translateZ(80px)',offset:.72},{opacity:1,transform:'translateZ(0px)'}],t-.07,dur+.13,{easing:EO});if(rgb)an(el,[{textShadow:RGB},{textShadow:RGB0}],t,.22,{fill:'none'});return}
+  an(el,[{opacity:0,transform:`scale(${s})`},{opacity:1,transform:`scale(${1+(s-1)*.4})`,offset:.22},{opacity:1,transform:'scale(1)'}],t,dur,{easing:EO});
+  if(rgb)an(el,[{textShadow:RGB},{textShadow:RGB0}],t,.22,{fill:'none'})}
+function rise(el,t,dy=34,dur=.28){if(FA){an(el,[{opacity:0,transform:`translateZ(-700px) translateY(${dy}px)`},{opacity:1,transform:'translateZ(0px) translateY(0px)'}],t-.04,dur+.06,{easing:EO});return}
+  an(el,[{opacity:0,transform:`translateY(${dy}px)`},{opacity:1,transform:'translateY(0px)'}],t,dur,{easing:EO})}
+function pop(el,t,dur=.26){an(el,[{opacity:0,transform:'scale(0)'},{opacity:1,transform:'scale(1)'}],t,dur,{easing:BO})}
+function wipe(el,t,dur=.32){an(el,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0% 0 0)'}],t,dur,{easing:EO})}
+function fade(el,t,dur=.3,to=null){const o=to??+getComputedStyle(el).opacity;an(el,[{opacity:0},{opacity:o}],t,dur)}
+function drop(el,t,h=1100,dur=.2,b=30){an(el,[{opacity:0,transform:`translateY(${-h}px)`},{opacity:1,offset:.02},{opacity:1,transform:'translateY(0px)'}],t,dur,{easing:EI});
+  an(el,[{transform:'translateY(0px)'},{transform:`translateY(${-b}px)`,offset:.4,easing:EI},{transform:'translateY(0px)'}],t+dur,.2,{fill:'none',composite:'add',easing:EO})}
+function whip(el,t,dx,dur=.2){const c='color-mix(in srgb,currentColor 38%,transparent)',c2='color-mix(in srgb,currentColor 18%,transparent)',d=dx>0?1:-1;
+  an(el,[{opacity:0,transform:`translateX(${dx}px) skewX(${-16*d}deg)`,textShadow:`${90*d}px 0 0 ${c},${190*d}px 0 0 ${c2}`},{opacity:1,offset:.08},{opacity:1,transform:'translateX(0px) skewX(0deg)',textShadow:`0px 0 0 ${c},0px 0 0 ${c2}`}],t-.05,dur,{easing:EO})}
+function punch(t,k=1.04){an($('#world'),[{transform:`scale(${k})`},{transform:'scale(1)'}],t,.2,{fill:'none',easing:EO})}
+// 光效画在两层画布上（b 在字牌下面，f 在字牌上面），每个光效都是时间的函数，拨到哪一帧就画哪一帧
+const fxb=$('#fxb').getContext('2d'),fxf=$('#fxf').getContext('2d'),fx=(c,t,dur,draw)=>FX.push({c,t,dur,draw});
+function ring(c,t,x,y,r0,r1,dur=.4,col='#fff',w=14,a=.9){fx(c,t,dur,(g,p)=>{g.globalAlpha=a*(1-p)**1.4;g.strokeStyle=col;g.lineWidth=Math.max(1,w*(1-p*.8));g.beginPath();g.arc(x,y,r0+(r1-r0)*(1-(1-p)**3),0,6.2832);g.stroke()})}
+function glow(c,t,x,y,r,dur=.34,col='255,236,170',a=.95){fx(c,t,dur,(g,p)=>{const rr=r*(.55+.6*(1-(1-p)**2)),gr=g.createRadialGradient(x,y,0,x,y,rr);
+  gr.addColorStop(0,`rgba(${col},${(a*(1-p)).toFixed(3)})`);gr.addColorStop(.45,`rgba(${col},${(a*.5*(1-p)).toFixed(3)})`);gr.addColorStop(1,`rgba(${col},0)`);g.fillStyle=gr;g.fillRect(x-rr,y-rr,rr*2,rr*2)})}
+function sparks(c,t,x,y,n=10,v=900,dur=.46,col='#ffe07a'){const ps=[];for(let i=0;i<n;i++){const a=-Math.PI*R(),s=v*(.3+R()*.7);ps.push([Math.cos(a)*s*1.3,Math.sin(a)*s,2.5+R()*4.5])}
+  fx(c,t,dur,(g,p,tt)=>{const q=u=>(1-Math.exp(-5*u))/5,u0=Math.max(0,tt-.04);g.strokeStyle=col;g.lineCap='round';g.globalAlpha=(1-p)**.6;
+    for(const [vx,vy,w] of ps){g.lineWidth=w*(1-p*.5);g.beginPath();g.moveTo(x+vx*q(u0),y+vy*q(u0)+900*u0*u0);g.lineTo(x+vx*q(tt),y+vy*q(tt)+900*tt*tt);g.stroke()}})}
+function rays(c,t,x,y,dur=.7,col='255,238,180',a=.55,n=16){const ws=[];for(let i=0;i<n;i++)ws.push([(i+R()*.6)/n*6.2832,.035+R()*.085]);
+  fx(c,t,dur,(g,p,tt)=>{const len=700+2000*(1-(1-p)**3),gr=g.createRadialGradient(x,y,0,x,y,len);gr.addColorStop(0,`rgba(${col},${(a*(1-p)**1.3).toFixed(3)})`);gr.addColorStop(1,`rgba(${col},0)`);g.fillStyle=gr;
+    for(const [a0,w] of ws){g.beginPath();g.moveTo(x,y);g.arc(x,y,len,a0+tt*.6-w,a0+tt*.6+w);g.closePath();g.fill()}})}
+// 漫画里的集中线：从四边指向落点，每帧换一组
+function lines(c,t,x,y,dur=.28,col='#fff',n=44,a=.85){fx(c,t,dur,(g,p,tt)=>{let s=(Math.floor(tt*30+.5)+3)*7919%2147483647||1;const r=()=>{s=s*16807%2147483647;return s/2147483647};g.fillStyle=col;g.globalAlpha=a*(1-p*.7);
+  for(let i=0;i<n;i++){const q=r()*6.2832,r0=430+r()*420+p*260,w=.004+r()*.011;g.beginPath();g.moveTo(x+Math.cos(q)*r0,y+Math.sin(q)*r0*1.5);g.lineTo(x+Math.cos(q-w)*2600,y+Math.sin(q-w)*2600);g.lineTo(x+Math.cos(q+w)*2600,y+Math.sin(q+w)*2600);g.closePath();g.fill()}})}
+function ca(t,amp=14,dur=.18){CAS.push({t,amp,dur})}   // 整屏红蓝错位几帧
+// 三档进字：大字（砸下、震屏、闪白、重音，最重的再加集中线）、中字、小字
+const inkOf=el=>el.closest('.c3,.c4')?'#151515':'#fff';
+function big(el,t,g=1,v=0){if(v==1)whip(el,t,900);else if(v==2)whip(el,t,-900);else slam(el,t,2.4,.17,1);
+  shake(t,17*g);flash(t,.16*g);if(g>=.9)punch(t,1+.04*g);sfx(t,'hit',g);if(g>=1.1){const [x,y]=RC.get(el)||[540,900];lines(fxf,t,x,y,.26,inkOf(el))}}
+function mid(el,t,q=1){slam(el,t,1.55,.15);if(q)sfx(t,'tick',.8)}
+
+// ———— 五、换卡 ————
+function push(sel,t,dir,dur=.3){if(FA)return fly3(sel,t);
+  const c=$(sel),from={r:'translateX(1400px) skewX(-9deg)',b:'translateY(1920px)',t:'translateY(-1920px)'}[dir],to=dir=='r'?'translateX(0px) skewX(0deg)':'translateY(0px)';
+  if(dir=='t'){an(c,[{transform:from},{transform:to}],t,dur*.7,{easing:EI});an(c,[{transform:'translateY(0px)'},{transform:'translateY(-46px)',offset:.4,easing:EI},{transform:'translateY(0px)'}],t+dur*.7,.22,{fill:'none',composite:'add',easing:EO})}
+  else an(c,[{transform:from},{transform:to}],t,dur,{easing:EO});sfx(t,'whoosh',1,dir=='t'?.7:1)}
+// 冲击波换卡：新卡从一个点炸开成整屏，白圈跟着卡边走
+function burst(sel,t,x,y,dur=.42){if(FA)return fly3(sel,t);
+  const e='cubic-bezier(.3,.5,.35,1)',r1=Math.hypot(Math.max(x,1080-x),Math.max(y,1920-y))+70,rg=document.createElement('div');rg.className='rg';
+  rg.style.cssText=`left:${x-r1}px;top:${y-r1}px;width:${r1*2}px;height:${r1*2}px`;$('#cards').appendChild(rg);
+  an($(sel),[{clipPath:`circle(0px at ${x}px ${y}px)`},{clipPath:`circle(${r1}px at ${x}px ${y}px)`}],t,dur,{easing:e});
+  an(rg,[{transform:'scale(0)',opacity:1},{opacity:.9,offset:.7},{transform:'scale(1)',opacity:0}],t,dur,{easing:e,fill:'none'});sfx(t,'whoosh',1.1,.9);sfx(t+.05,'hit',.7);shake(t+.03,10,.2)}
+// 整条飞：新卡从远处斜着飞来，旧卡朝镜头冲过去消失，中间穿一层云
+function fly3(sel,t,dur=.46){const c=$(sel),pv=c.previousElementSibling,d=(sel.charCodeAt(2)%2)?1:-1;
+  an(c,[{transform:`translateZ(-3000px) rotateX(16deg) rotateY(${14*d}deg) rotateZ(${-5*d}deg)`,opacity:0},{opacity:1,offset:.22},{transform:'translateZ(0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)',opacity:1}],t-.04,dur,{easing:'cubic-bezier(.15,.75,.3,1)'});
+  if(pv&&pv.classList.contains('card'))an(pv,[{transform:'translateZ(0px)',opacity:1},{transform:`translateZ(900px) rotateZ(${4*d}deg)`,opacity:0}],t-.04,dur*.7,{fill:'forwards',easing:EI});
+  cloudsAt(t-.12,9);sfx(t-.04,'whoosh',1.2,.6);sfx(t+.05,'whoosh',.7,1.1)}
+function cloudsAt(t,n){const box=$('#yy');box.classList.add('fly');for(let i=0;i<n;i++){const c=document.createElement('div');c.className='ycl';box.appendChild(c);
+  const a=YR()*6.2832,r=200+YR()*600,x=540+Math.cos(a)*r,y=900+Math.sin(a)*r*1.4,z=420+YR()*560,t0=t+YR()*.18;
+  Object.assign(c.style,{left:(x-z/2)+'px',top:(y-z*.31)+'px',width:z+'px',height:z*.62+'px'});
+  an(c,[{transform:'translateZ(-2400px)',opacity:0},{opacity:.9,offset:.4},{transform:'translateZ(1000px)',opacity:0}],t0,.55+YR()*.2,{fill:'both',easing:'cubic-bezier(.4,0,.8,.6)'})}}
+function cards(){if(FA){$('#scr').classList.add('fa');const kf=[];for(let i=0;i<=40;i++){const u=i/40*TM.dur;kf.push({transform:`scale(1.05) rotateY(${(Math.sin(u*1.05)*2.6).toFixed(2)}deg) rotateX(${(Math.cos(u*.8)*1.7).toFixed(2)}deg) translateZ(${(Math.sin(u*.6)*30).toFixed(1)}px)`})}an($('#cards'),kf,0,TM.dur)}
+  burst('.c2',X[0],GC[0],GC[1]);push('.c3',X[1],'r');sfx(X[2]-.42,'riser');push('.c4',X[2],'t',.3);
+  const h=X[2]+.21;sfx(h,'boom',1);sfx(h,'hit',1.1);shake(h,30,.34);flash(h,.3);lines(fxf,h,540,760,.3,'#151515');ca(h,16,.2);burst('.c5',X[3],540,Y4+131);
+  const d=k=>[CS[k]-.6,CS[k+1]-CS[k]+1.2];
+  $$('.card').forEach((c,k)=>{an($('.pb u',c),[{width:'0%'},{width:'100%'}],CS[k],CS[k+1]-CS[k]);an($('#cam'),[{transform:'scale(1)'},{transform:'scale(1.035)'}],CS[k],CS[k+1]-CS[k],{fill:k?'forwards':'both'})});
+  an($('.c1 .bg'),[{transform:'translate(-140px,-220px)'},{transform:'translate(120px,120px)'}],...d(0));an($('.qm'),[{transform:'rotate(8deg) translate(0px,0px)'},{transform:'rotate(15deg) translate(-90px,-70px)'}],...d(0));
+  an($('.c2 .bg'),[{transform:'rotate(0deg)'},{transform:`rotate(${(d(1)[1]*7).toFixed(1)}deg)`}],...d(1));an($('.c3 .bg'),[{transform:'translate(0px,0px)'},{transform:'translate(-70px,-50px)'}],...d(2));
+  an($('.c4 .bg'),[{transform:'translateX(0px)'},{transform:`translateX(${(-d(3)[1]*40).toFixed(0)}px)`}],...d(3));an($('.qm4'),[{transform:'rotate(-8deg) translate(0px,0px)'},{transform:'rotate(-15deg) translate(80px,-70px)'}],...d(3));
+  $$('.hz').forEach((h,i)=>an(h,[{transform:'translateX(0px)'},{transform:`translateX(${i?-124.45:124.45}px)`}],d(3)[0],.45,{iterations:Math.ceil(d(3)[1]/.45)}));
+  an($('.c5 .bg'),[{transform:'rotate(0deg)'},{transform:`rotate(${(d(4)[1]*5).toFixed(1)}deg)`}],...d(4))}
+
+// ———— 五点五、原页段（主人 11-18 提）：念原文时《论语集注》原页上屏，红框跟着念到的字往下长；念完，框里的字飞出来变成字牌 ————
+// ?yy=flat 静态上屏（红卡上一张纸，镜头慢推到这句）；?yy=fly 飞行（镜头穿云飞向原页，跟着念到的字往下飞，字边读边从纸上浮起来）；?yy=off 或没有 ep/<名>/yy.json 就照旧
+const YQ=new URLSearchParams(location.search).get('yy')||S.yymode||'fly';
+const YD=YQ=='off'?null:await fetch(`ep/${EP}/yy.json`,{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+const FA=YQ=='all',YY=!!YD&&YD.ch.length==N,FLY=YY&&(YQ=='fly'||FA);if(YD&&!YY)CHK.push(`原页段：原页上框出 ${YD.ch.length} 个字，金句 ${N} 个字，对不上，这条不放原页`);
+const KE=KT.map(t=>{const c=L.quote.ch.find(x=>x[1]==t);return c?c[2]:t+.2});
+let YL=null,YH=null;   // 每个字落到字牌上的时刻；柯基让位的时段
+let ys=7;const YR=()=>{ys=ys*16807%2147483647;return ys/2147483647};   // 原页段自己的随机数，不打乱字牌那套
+function yy(){if(!YY)return;const W=YD.w,H=YD.h,O=[W/2,H/2],CX=540,CY=FLY?900:935,P=1100,box=$('#yy');
+  const tIn=X[0]+.16,tLand=KT[0]-.14,tOut=KE[N-1]+.06,U=[Math.min(...YD.ch.map(c=>c[1])),Math.min(...YD.ch.map(c=>c[2])),Math.max(...YD.ch.map(c=>c[3])),Math.max(...YD.ch.map(c=>c[4]))],UC=[(U[0]+U[2])/2,(U[1]+U[3])/2];
+  const RW=FLY?1000:920,RH=FLY?1500:990,k0=Math.min(RW/W,RH/H),k1=Math.min(k0*2.3,.86*RW/(U[2]-U[0]+40),.86*RH/(U[3]-U[1]+40)),ch0=YD.ch[0][4]-YD.ch[0][2],kF=Math.max(k1,Math.min(k1*1.9,150/ch0));
+  // 页上 c 点摆到屏中心、放大 k；z＝往镜头飞了多少
+  const T=(k,c,z=0,rx=0,rz=0)=>`translate3d(${(CX-O[0]-k*(c[0]-O[0])).toFixed(1)}px,${(CY-O[1]-k*(c[1]-O[1])).toFixed(1)}px,${z.toFixed(0)}px) rotateX(${rx}deg) rotateZ(${rz}deg) scale(${k.toFixed(4)})`;
+  const scrOf=(k,c,p,z=0)=>{const f=FLY?P/(P-z):1;return [CX+k*(p[0]-c[0])*f,CY+k*(p[1]-c[1])*f,k*f]};
+  box.innerHTML=(FLY?'<div class="ysky"></div>'+Array.from({length:16},()=>'<div class="ycl"></div>').join(''):'<div class="ypn"></div>')+
+    `<div class="yc"><div class="yp" style="width:${W}px;height:${H}px;transform-origin:${O[0]}px ${O[1]}px"><img src="ep/${EP}/yy.jpg" width="${W}" height="${H}">`+
+    YD.seg.map(()=>'<div class="yb"></div>').join('')+YD.ch.map(c=>`<div class="yg" style="left:${c[1]}px;top:${c[2]}px;width:${c[3]-c[1]}px;height:${c[4]-c[2]}px;background-position:${-c[1]}px ${-c[2]}px;background-size:${W}px ${H}px"></div>`).join('')+
+    `</div></div><div class="yt">${esc(YD.src||'《论语集注》')}<i>原页</i></div>`;
+  box.classList.add(FLY?'fly':'flat');$$('.yg',box).forEach(g=>g.style.backgroundImage=`url(ep/${EP}/yy.jpg)`);
+  const yp=$('.yp',box),yt=$('.yt',box),bw=Math.max(5,7/(FLY?kF:k1));
+  // 红框：一列一框，念到哪个字长到哪个字，最后整句框全
+  $$('.yb',box).forEach((b,j)=>{const ix=YD.seg[j],cs=ix.map(i=>YD.ch[i]),x0=Math.min(...cs.map(c=>c[1]))-10,x1=Math.max(...cs.map(c=>c[3]))+10,y0=cs[0][2]-10;
+    Object.assign(b.style,{left:x0+'px',top:y0+'px',width:(x1-x0)+'px',borderWidth:bw.toFixed(1)+'px',boxShadow:`0 0 ${(bw*2.4).toFixed(0)}px rgba(255,70,40,.75)`});
+    ix.forEach((i,m)=>{const h=YD.ch[i][4]+10-y0,h0=m?YD.ch[ix[m-1]][4]+10-y0:YD.ch[i][2]-y0+bw*2;
+      an(b,[{height:h0+'px',opacity:m?1:0},{height:h+'px',opacity:1}],KT[i]-.04,.14,{fill:m?'forwards':'both',easing:EO});sfx(KT[i]-.02,'tick',.45,1.1+m*.05)})});
+  if(FLY){
+    // 天：墨绿夜空，镜头穿过云层，原页从纵深飞到面前
+    const sky=$('.ysky',box);an(sky,[{opacity:0},{opacity:1}],tIn-.04,.22);an(sky,[{opacity:1},{opacity:0}],tOut+.34,.3,{fill:'forwards'});
+    $$('.ycl',box).forEach(c=>{const a=YR()*6.2832,r=300+YR()*520,x=CX+Math.cos(a)*r,y=CY+Math.sin(a)*r*1.3,s=420+YR()*520,t0=tIn-.05+YR()*.25,du=.5+YR()*.35;
+      Object.assign(c.style,{left:(x-s/2)+'px',top:(y-s/2)+'px',width:s+'px',height:s*.62+'px'});
+      an(c,[{transform:'translateZ(-2600px)',opacity:0},{opacity:.85,offset:.35},{transform:'translateZ(1000px)',opacity:0}],t0,du,{fill:'both',easing:'cubic-bezier(.4,0,.8,.6)'})});
+    for(let i=0;i<5;i++){const c=document.createElement('div');c.className='ycl';box.insertBefore(c,$('.yc',box));const s=500+YR()*400,x=i%2?-160+YR()*200:760+YR()*200,y=500+YR()*900;
+      Object.assign(c.style,{left:x+'px',top:y+'px',width:s+'px',height:s*.55+'px'});an(c,[{transform:'translateZ(-900px)',opacity:0},{opacity:.45,offset:.3},{transform:'translateZ(700px)',opacity:0}],tLand-.1+i*.42,1.5,{fill:'both'})}
+    // 镜头：远处飞来（斜着、转着）→ 扑到第一个字 → 跟着念到的字往下飞 → 拉开看整句框全
+    an(yp,[{transform:T(k0,O,-5200,38,-12),opacity:0},{opacity:1,offset:.2},{transform:T(k0*.98,O,0,4,-1.5),opacity:1}],tIn+.04,tLand-.18-tIn,{easing:'cubic-bezier(.12,.7,.3,1)'});
+    const t0=tLand-.18,t1=tOut+.3,o=t=>(t-t0)/(t1-t0),cen=c=>[(c[1]+c[3])/2,(c[2]+c[4])/2],kf=[{transform:T(k0*.98,O,0,4,-1.5),offset:0}];
+    kf.push({transform:T(kF,cen(YD.ch[0])),offset:o(KT[0]+.12),easing:'ease-in-out'});
+    for(let i=1;i<N;i++)kf.push({transform:T(kF,cen(YD.ch[i])),offset:o(Math.max(KT[i]+.1,KT[i-1]+.2)),easing:'ease-in-out'});
+    kf.push({transform:T(kF,cen(YD.ch[N-1])),offset:o(KE[N-1]-.02),easing:EO});kf.push({transform:T(k1,UC),offset:1});
+    for(let i=1;i<kf.length;i++)if(kf[i].offset<=kf[i-1].offset)kf[i].offset=Math.min(1,kf[i-1].offset+.001);
+    an(yp,kf,t0,t1-t0,{fill:'forwards'});
+    an(yp,[{transform:T(k1,UC),opacity:1},{transform:T(k1*.7,UC,-3200,-20,6),opacity:0}],tOut+.42,.34,{fill:'forwards',easing:EI});
+    // 字边读边从纸上浮起来（活字），金边发亮
+    $$('.yg',box).forEach((g,i)=>{an(g,[{transform:'translateZ(0px) scale(1)',opacity:0,boxShadow:'0 0 0 0 rgba(0,0,0,0),0 0 0 0 rgba(255,207,51,0)'},{transform:'translateZ(300px) scale(1.2)',opacity:1,offset:.6},{transform:'translateZ(240px) scale(1.12)',opacity:1,boxShadow:'0 30px 34px 0 rgba(0,0,0,.5),0 0 0 5px rgba(255,207,51,1)'}],KT[i]+.02,.3,{easing:EO});
+      an(g,[{opacity:1},{opacity:0}],tOut+.3,.04,{fill:'forwards'})});
+    sfx(tIn,'whoosh',1.2,.55);sfx(tLand-.25,'whoosh',.9,.8);sfx(tOut+.42,'whoosh',1,.7);
+    YH=[tIn+.05,tOut+.7]}
+  else{
+    // 静态：红卡上铺一张纸（原页），从下面升上来；念的时候镜头慢推到这一句
+    const pn=$('.ypn',box),yc=$('.yc',box);[pn,yc].forEach(e=>{an(e,[{opacity:0,transform:'translateY(80px)'},{opacity:1,transform:'translateY(0px)'}],tIn,.36,{easing:EO});an(e,[{opacity:1,transform:'translateY(0px) scale(1)'},{opacity:0,transform:'translateY(40px) scale(.94)'}],tOut+.34,.26,{fill:'forwards'})});
+    an(yp,[{transform:T(k0,O)},{transform:T(k0,O),offset:.001},{transform:T(k1,UC)}],tLand-.1,tOut-tLand+.3,{easing:'cubic-bezier(.3,0,.2,1)'});
+    sfx(tIn,'whoosh',.8,1.1)}
+  an(yt,[{opacity:0,transform:'translateY(-20px)'},{opacity:1,transform:'translateY(0px)'}],tLand-.05,.3,{easing:EO});an(yt,[{opacity:1},{opacity:0}],tOut+.3,.2,{fill:'forwards'});
+  // 念完：框里的字一个个飞出来，落到字牌上，字牌顺势翻开
+  const zl=FLY?240:0;YL=[];
+  YD.ch.forEach((c,i)=>{const [sx,sy,ss]=scrOf(k1,UC,[c[1],c[2]],zl),w=c[3]-c[1],h=c[4]-c[2],b=TLay[2](i),tS=b[2]*250,s1=tS*.86/h,ex=b[0]+tS/2-w*s1/2,ey=b[1]+tS/2-h*s1/2,t=tOut+.32+i*.035;
+    const g=document.createElement('div');g.className='ygs';Object.assign(g.style,{width:w+'px',height:h+'px',backgroundImage:`url(ep/${EP}/yy.jpg)`,backgroundSize:`${W}px ${H}px`,backgroundPosition:`${-c[1]}px ${-c[2]}px`});box.appendChild(g);
+    const mx=(sx+ex)/2+(YR()-.5)*120,my=Math.min(sy,ey)-140-YR()*80;
+    an(g,[{transform:`translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px) scale(${ss.toFixed(3)})`,opacity:1},{transform:`translate(${mx.toFixed(1)}px,${my.toFixed(1)}px) scale(${(s1*1.25).toFixed(3)}) rotate(${(YR()*30-15).toFixed(0)}deg)`,opacity:1,offset:.5},{transform:`translate(${ex.toFixed(1)}px,${ey.toFixed(1)}px) scale(${s1.toFixed(3)})`,opacity:1,offset:.92},{transform:`translate(${ex.toFixed(1)}px,${ey.toFixed(1)}px) scale(${s1.toFixed(3)})`,opacity:0}],t,.36,{fill:'forwards',easing:'cubic-bezier(.3,.1,.3,1)'});
+    an(g,[{opacity:0},{opacity:0}],0,t,{fill:'none'});YL.push(t+.33);if(i%2==0)sfx(t,'whoosh',.5,1.3)})}
+// ———— 六、字牌：砸屏 → 跟着人声一块块翻开 → 退到左栏 → 被反转炸飞 → 盖回收藏卡 ————
+const TL=[];
+function tiles(){const box=$('#tiles');CH.forEach(c=>{box.insertAdjacentHTML('beforeend',`<div class="tile"><div class="tsh"></div><div class="tr"><div class="tf"><div class="tba">？<div class="glb"></div></div><div class="ts l"></div><div class="ts r"></div><div class="ts t"></div><div class="ts b"></div><div class="tfa">${c}<div class="gl"></div></div></div></div></div>`);TL.push(box.lastChild)});
+  const P=(x,y,k)=>`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${+k.toFixed(4)})`,Z=(a,m,dx=0,dy=0)=>P(a[0]-(m-1)*125*a[2]+dx,a[1]-(m-1)*125*a[2]+dy,a[2]*m),ctr=a=>[a[0]+125*a[2],a[1]+125*a[2]];
+  const dA=Math.min(.055,.5/N),dE=Math.min(.045,.41/N);
+  TL.forEach((el,i)=>{const tr=$('.tr',el),tf=$('.tf',el),fa=$('.tfa',el),sh=$('.tsh',el),gl=$('.gl',el),b=TLay[2](i),c=TLay[3](i),e=TLay[5](i),[bx,by]=ctr(b),[cx,cy]=ctr(c),[ex,ey]=ctr(e),ge=GE[i];
+    // 砸屏：从镜头前一块块拍下来，盖住问题
+    let t=tN-.05+i*dA,h=t+.17;an(el,[{transform:Z(b,3.6,(bx-540)*.9,(by-960)*.5),opacity:0},{opacity:1,offset:.12},{transform:P(...b),opacity:1}],t,.17,{easing:EI});
+    an(tr,[{transform:`rotate(${(R()*50-25).toFixed(1)}deg)`},{transform:'rotate(0deg)'}],t,.17);an(tr,[{transform:'scale(1)'},{transform:'scale(.92)',offset:.3},{transform:'scale(1)'}],h,.2,{fill:'none'});
+    ring(fxb,h,bx,by,S2*.45,S2*(ge?1.5:1.05),.36,'#fff',ge?16:10,.8);shake(h,ge?16:8,.18);sfx(h,'clack',.75,.8+i*.035);if(ge)sfx(h,'hit',.8);
+    // 扣着等的那几秒：一道光斜着扫过牌背，隔一会儿扫一遍；开念原文前，整盘牌抖一下
+    const glb=$('.glb',el);for(let w=tN+(N-1)*dA+.32,j=0;w<KT[0]-.75;w+=1.25,j++)an(glb,[{transform:'translateX(-340px) skewX(-20deg)'},{transform:'translateX(340px) skewX(-20deg)'}],w+(CI[i]+GI[i])*.07,.32,{fill:j?'forwards':'both'});
+    const tq=KT[0]-.52;an(tr,[{transform:'rotate(0deg)'},{transform:'rotate(4deg)',offset:.2},{transform:'rotate(-4deg)',offset:.45},{transform:'rotate(3deg)',offset:.7},{transform:'rotate(0deg)'}],tq+(i%3)*.02,.3,{fill:'none'});
+    // 翻牌：念到哪个字翻哪块，牌跳起来翻身，底下冒光、落地溅火星
+    t=YL?YL[i]-.13:KT[i]-.1;an(tf,[{transform:'translateZ(0px) rotateY(180deg)'},{transform:'translateZ(240px) rotateY(96deg)',offset:.45},{transform:'translateZ(0px) rotateY(0deg)'}],t,.26,{easing:'cubic-bezier(.3,0,.3,1)'});
+    an(sh,[{transform:'scale(1)',opacity:1},{transform:'scale(1.25)',opacity:.45,offset:.45},{transform:'scale(1)',opacity:1}],t,.26,{fill:'none'});
+    an(gl,[{transform:'translateX(-340px) skewX(-20deg)'},{transform:'translateX(340px) skewX(-20deg)'}],t+.2,.3);
+    glow(fxb,t+.06,bx,by,S2*1.25);sparks(fxf,t+.24,bx,by+S2*.3,ge?16:9,ge?1100:800);ring(fxb,t+.25,bx,by,S2*.5,S2*(ge?1.35:.95),.3,'#ffe9a8',8,.8);
+    sfx(t+.1,'flip',.9,1+CI[i]*.06);if(ge){shake(t+.25,12,.2);punch(t+.25,1.045);sfx(t+.25,'hit',.7)}
+    // 退到左栏排成几行，牌面由米白变朱红
+    t=X[1]-.02+GI[i]*.05;an(el,[{transform:P(...b)},{transform:P(...c)}],t,.46,{fill:'forwards',easing:EO});an(fa,[{backgroundColor:'#f6efdc',color:'#151515'},{backgroundColor:'#d9391f',color:'#fff6e6'}],t+.1,.3);
+    // 黄卡砸下来，牌朝镜头炸飞
+    t=X[2]+.2+R()*.06;const q=Math.atan2(cy-900,cx-330)+(R()-.5)*.9,far=800+R()*700,m=3.2+R()*3;
+    an(el,[{transform:P(...c),opacity:1},{transform:Z(c,m,Math.cos(q)*far,Math.sin(q)*far),opacity:1,offset:.75},{transform:Z(c,m*1.25,Math.cos(q)*far*1.3,Math.sin(q)*far*1.3),opacity:0}],t,.5,{fill:'forwards',easing:'cubic-bezier(.2,.6,.4,1)'});
+    an(tr,[{transform:'rotate(0deg)'},{transform:`rotate(${(R()*300-150).toFixed(0)}deg)`}],t,.5,{fill:'forwards'});
+    // 盖回收藏卡：像盖章一样一块块拍上去
+    t=X[3]+.34+i*dE;an(el,[{transform:Z(e,3.2,(ex-540)*.6,-200),opacity:0},{opacity:1,offset:.15},{transform:P(...e),opacity:1}],t,.2,{fill:'forwards',easing:EI});
+    an(tr,[{transform:`rotate(${(R()*60-30).toFixed(0)}deg)`},{transform:'rotate(0deg)'}],t,.2,{fill:'forwards'});
+    ring(fxb,t+.2,ex,ey,s5*.5,s5*1.3,.3,'#d9391f',6,.7);sfx(t+.2,'clack',.5,1+i*.03);if(ge)shake(t+.2,7,.14)});
+  sfx(KT[0]-.52,'riser',.7);sfx(KT[0]-.5,'clack',.5,1.3);
+  // 第一块砸下来，问题大字被拍没
+  an($('.g1'),[{opacity:1,filter:'brightness(1)'},{opacity:0,filter:'brightness(4)'}],tN-.05+.17,.12);
+  // 全部翻开：大爆点
+  const te=YL?YL[N-1]+.1:KT[N-1]+.18;TL.forEach((el,i)=>an($('.tr',el),[{transform:'scale(1)'},{transform:'scale(1.12)',offset:.4},{transform:'scale(1)'}],te+i*.02,.26,{fill:'none'}));
+  rays(fxb,te,GC[0],GC[1],.7);ring(fxb,te,GC[0],GC[1],200,1500,.5,'#fff',30,.8);flash(te,.3,.16);ca(te,16,.2);shake(te,18,.3);sfx(te,'boom',1);sfx(te,'clack',.8,.7)}
+
+// ———— 七、五张卡各自的字 ————
+function c1(){const c=$('.c1'),g=$$('.g1 .k',c),k=$$('.c1t .k',c),n=g.length;$('.bt',c).textContent=Math.round(TM.dur)+' 秒读完';
+  g.forEach((el,i)=>big(el,tAsk[i]-.03,i==n-1?1.25:i?.7:.8,i&&i<n-1?(i%2?1:2):0));
+  // 第一行开场就砸了；口播要是晚一点才念到它（先交代一句，再念“一二三四五六”），念到时逐字跳一遍；字数对不上就整行跳一下
+  if(iA0>=0&&qa.ch[iA0][1]>L.ask.t0+.4){const cs=$$('i',g[0]).filter(x=>han(x.textContent)),m=han(cue(S.ask.big[0])).length;
+    if(cs.length==m)cs.forEach((x,j)=>{const t=qa.ch[iA0+j][1]-.03;an(x,[{transform:'translateY(0px) scale(1)',color:'#fff'},{transform:'translateY(-34px) scale(1.22)',color:'#ffcf33',offset:.35},{transform:'translateY(0px) scale(1)',color:'#fff'}],t,.26,{fill:'none'});sfx(t,'tick',.9,.8+j*.07)});
+    else{const t=qa.ch[iA0][1]-.03;an(g[0],[{transform:'scale(1)'},{transform:'scale(1.1)',offset:.3},{transform:'scale(1)'}],t,.24,{fill:'none',composite:'add'});sfx(t,'tick',1)}}
+  // 最后一行砸完，这句口播还剩一截：收尾那个词上，这行大字再闪一下红蓝错位
+  const tz=L.ask.ch[Math.max(0,L.ask.ch.length-2)][1];if(tz-tAsk[n-1]>.7){an(g[n-1],[{textShadow:RGB},{textShadow:RGB0}],tz,.24,{fill:'none'});shake(tz,9,.16);sfx(tz,'tick',1,.7)}
+  const hot=$('.hot',c);an(hot,[{transform:'scale(1)'},{transform:'scale(1.24)',offset:.3},{transform:'scale(1)'}],0,.6,{fill:'none',iterations:Math.max(1,Math.floor((tHook[0]-.2)/.6))});   // “热”字角标一直跳
+  [hot,$('.pill',c),$('.q0',c)].forEach(el=>an(el,[{opacity:1},{opacity:0}],tHook[0]-.14,.1));   // 钩子一来，顶上的来源和原题让位
+  k.forEach((el,i)=>i==iN?big(el,tHook[i]-.03,1):mid(el,tHook[i]-.03))}
+// 屏上有、口播里没念的字（背景、“子曰”、没念到的白话行）：不跟口播，换卡后自己依次出
+function c2(){const c=$('.c2'),t0=X[0]+.3,w1=$('.w1 .k',c),zy=$('.zy .k',c);if(w1)mid(w1,tWhen!=null?tWhen-.03:t0,tWhen!=null);
+  $$('.w2 .k',c).forEach((el,i)=>rise(el,tStory[i]!=null?tStory[i]-.05:t0+.08+i*.12));if(zy)mid(zy,tLead!=null?tLead-.03:Math.max(t0+.2,KT[0]-.62),tLead!=null);fade($('.from',c),KT[0]-.25,.3)}   // 出处从翻第一块牌起就在，够看清
+function c3(){const c=$('.c3'),t0=X[1]+.2,n3=$('.n3',c);mid($('.h3 .k',c),t0,0);
+  $$('.rw',c).forEach((r,i)=>{const tt=[];tRows[i].forEach((v,j)=>tt.push(v!=null?v-.03:j?tt[j-1]+.14:t0+.25+i*.16));
+    $$('.mn .k',r).forEach((k,j)=>{const t=tt[j],m=k.classList.contains('m');mid(k,t);if(m||k.classList.contains('y'))an(k,[{backgroundSize:'0% 30%'},{backgroundSize:'100% 30%'}],t+.1,m?.36:.24,{easing:EO})});
+    // 讲到哪一行，那一行的字牌跳一下
+    const t=tt[0],n=KEY[i].length;TL.forEach((el,j)=>{if(GI[j]==i)an($('.tr',el),[{transform:'scale(1)'},{transform:'scale(1.16)',offset:.4},{transform:'scale(1)'}],t+CI[j]*.03,.24,{fill:'none'})});
+    ring(fxb,t,70+(n*s3+(n-1)*g3)/2,Y3(i)+s3/2,s3*.9,s3*(ST3?1.9:2.4),.34,'#d9391f',8,.6)});if(n3)fade(n3,L.gloss.t1-.2)}
+function c4(){const c=$('.c4'),k=$$('.b4t .k',c),m=$$('.m4 .k',c),n=m.length,q4=$('.q4',c),a4=$('.a4',c),by=$('.by',c),h4=$('.h4',c),hb=$('.h4b',c),hk=$$('.k',hb),qi=$('i',hb),ch=$('.ch4',c),ch4=$('.ch4 .k',c),th=[];
+  // 问句先当海报：整屏大字一行行砸下来，问号晃着等；原话（或大词）开念前，海报缩回顶上当标题
+  const tGo=Math.max(tHead+.55,(NAR?tCl[0][0]:tBig?tBig[0]:tHead+1.4)-.36);
+  hk.forEach((el,i)=>{const t=i?Math.max(th[i-1]+.22,(tHL[i]??tHead+i*.3)-.03):tHead+.06;th.push(t);big(el,t,i==hk.length-1?1.15:.8,i?1:0)});
+  if(qi)for(let t=th[th.length-1]+.45;t<tGo-.3;t+=.72){an(qi,[{transform:'rotate(0deg) scale(1)'},{transform:'rotate(17deg) scale(1.22)',offset:.3},{transform:'rotate(-9deg) scale(1.06)',offset:.65},{transform:'rotate(0deg) scale(1)'}],t,.42,{fill:'none'});ring(fxf,t+.08,QI[0],QI[1],50,250,.4,'#d9391f',10,.5)}
+  const s=Math.min(parseFloat(getComputedStyle(h4).fontSize)/parseFloat(hk[0].style.fontSize),lh(h4)/H4[1]).toFixed(3),to=`translate(${h4.offsetLeft-hb.offsetLeft}px,${h4.offsetTop-H4[0]}px) scale(${s})`,GO={fill:'forwards',easing:'cubic-bezier(.5,0,.75,.4)'};
+  an(hb,[{transform:'scale(1)'},{transform:'scale(1.04)'}],tHead,tGo-tHead);
+  an(hb,[{transform:'scale(1.04)',opacity:1},{transform:to,opacity:1,offset:.8},{transform:to,opacity:0}],tGo,.28,GO);
+  sfx(tGo,'whoosh',.8,1.25);mid($('.k',h4),tGo+.22);an($('.qm4',c),[{opacity:1},{opacity:0}],tGo,.3);
+  // 出处黑签：口播念到注家是谁就砸出来。离海报收走还有一会儿，就先放大了摆在海报下面，再跟着一起归位；来不及就等海报收走，直接砸在标题下面
+  if(ch4){if(tGo-tAttr>.3){const from=`translate(0px,${H4[0]+H4[1]+34-ch.offsetTop}px) scale(${Math.min(1.7,850/C4W).toFixed(3)})`;an(ch,[{transform:from},{transform:from}],0,tGo);
+      an(ch,[{transform:from},{transform:'translate(0px,0px) scale(1)',offset:.8},{transform:'translate(0px,0px) scale(1)'}],tGo,.28,GO);mid(ch4,tAttr-.03)}
+    else mid(ch4,Math.max(tAttr-.03,tGo+.26))}
+  // 注家原话：口播里念它，就一个分句一个分句跟着念的速度划出来；不念，就在海报收走后一下划出来
+  if(q4){if(NAR)$$('.k',q4).forEach((el,j)=>an(el,[{clipPath:'inset(-10% 100% -10% 0)'},{clipPath:'inset(-10% -2% -10% 0)'}],tCl[j][0]-.05,Math.max(.25,tCl[j][1]-tCl[j][0])));else wipe(q4,tGo+.3,.4)}
+  const tb=tBig||k.map((x,i)=>(tSrc?tSrc[1]+.05:tGo+.6)+i*.13);   // 大词不在口播里：原话念完（或海报收走之后）黑牌连着落
+  k.forEach((x,i)=>{const t=tb[i]-.03,[x0,y0]=RC.get(x);drop(x,t-.16,900,.16,26);shake(t,16,.2);sfx(t,'hit',1);ring(fxb,t,x0,y0+96,70,250,.3,'#151515',10,.5)});
+  const tl=tb[k.length-1]-.03;lines(fxf,tl,540,Y4+131,.3,'#151515');ca(tl,12,.16);
+  m.forEach((el,i)=>{const t=tShow[i]-.03;if(i==n-1)big(el,t,1.1,1);else if(i==0)big(el,t,.7,2);else mid(el,t)});if(a4)fade(a4,L.twist.t1-.3);if(by)fade(by,L.twist.t1-.2)}
+function c5(){const c=$('.c5'),d=$('.cd',c),t0=X[3]+.12,v=$$('.v .k',c),e=L.view.t1+.12;
+  an(d,[{transform:'translateY(220px) scale(.92)'},{transform:'translateY(0px) scale(1)'}],t0,.42,{easing:BO});
+  fade($('.t1',d),t0+.1,.15);fade($('.q',d),t0+.14,.2);pop($('.seal',d),t0+.3);sfx(t0+.36,'clack',.7,.7);fade($('.t2',d),t0+.2,.2);
+  $$('.r .b',d).forEach((b,i)=>rise(b,t0+.3+i*.09,20,.22));wipe($('.hr',d),t0+.6,.3);pop($('.t3',d),L.view.ch[0][1]+.05,.22);
+  v.forEach((el,i)=>mid(el,tView[i]-.03));fade($('.u',d),L.view.t1-.2);
+  big($('.sv .k',c),e,1);flash(e+.02,.55,.22);sfx(e+.02,'shutter');an($('.sw',d),[{transform:'translateX(-300px) rotate(18deg)'},{transform:'translateX(1500px) rotate(18deg)'}],e+.04,.5);rise($('.cm',c),e+.4);rise($('.fo',c),e+1.1)}
+
+cards();yy();tiles();c1();c2();c3();c4();c5();
+let PJ=null;const DOG=$('#dog'),DOGI=$('#dogi'),HOLE=$('#hole');if(!DOGON){DOG.style.display='none';HOLE.style.display='none'}let DSEG=null;const DOGNOTE=[];
+const cam=$('#cam'),caR=$('#caR'),caB=$('#caB'),CARDS=$$('.card');
+const COVER=Math.max(tAsk[tAsk.length-1]+.4,tHook[0]-.22);   // 头两帧当封面：直接给出大字全砸完、原题还在的那一刻（平台自动拿第一帧做封面），第三帧起才从头演
+window.seek=T=>{let t=T<.06?COVER:T;const td=t;if(PZ&&t>=PZ[0]&&t<PZ[0]+PZ[1])t=PZ[0];for(const a of A)a.currentTime=t*1000;
+  CARDS.forEach((c,k)=>c.style.visibility=(k&&t<X[k-1]-.02)||(k<4&&t>X[k]+.62)?'hidden':'visible');   // 被盖住的卡不画，出片快一倍多
+  fxb.clearRect(0,0,1080,1920);fxf.clearRect(0,0,1080,1920);for(const e of FX)if(t>=e.t&&t<e.t+e.dur){e.c.save();e.draw(e.c,(t-e.t)/e.dur,t-e.t);e.c.restore()}
+  let k=0;for(const e of CAS)if(t>=e.t&&t<e.t+e.dur)k=Math.max(k,e.amp*(1-(t-e.t)/e.dur));
+  if(k>.5){caR.setAttribute('dx',(-k).toFixed(1));caB.setAttribute('dx',k.toFixed(1));cam.style.filter='url(#ca)'}else cam.style.filter='';
+  if(DOGON)dogAt(td);if(PJ)PJ(T)};
+// 柯基神出鬼没：每两句口播换个地方。换的时候先钻进洞里，再从别处的洞里钻出来接着说
+function dogAt(t){if(YH&&t>YH[0]&&t<YH[1]){DOG.style.visibility='hidden';HOLE.style.opacity=0;return}DOG.style.visibility='';const f=Math.round(t*30),o=dogMouth(t,f),bl=(t%3.7)>3.58,by=Math.sin(t*2.4)*5-o*6,dk=o.toFixed(2)+(bl?'b':'');
+  const SG=DSEG&&DSEG.length?DSEG:[[0,1e9,DP]];let j=0;while(j<SG.length-1&&t>=SG[j][1])j++;const [s0,s1,p]=SG[j],last=j==SG.length-1;if(!p){DOG.style.display='none';HOLE.style.opacity=0;return}DOG.style.display='';
+  let sink=0,hole=0;
+  if(!last&&t>s1-.24){const u=(t-(s1-.24))/.24;sink=u*u;hole=Math.min(1,(t-(s1-.3))/.08)}            // 钻进去
+  else if(!last&&t>s1-.3)hole=(t-(s1-.3))/.08;
+  else if(j>0&&t<s0+.42){const u=Math.min(1,(t-s0)/.3);sink=Math.max(0,1-(1-(1-u)**3))-.1*Math.sin(Math.PI*u);hole=t<s0+.26?Math.min(1,(t-s0)/.06+.2):1-(t-s0-.26)/.16}   // 钻出来，冒头时多蹿一点
+  hole=Math.max(0,Math.min(1,hole));const z=p[2];
+  Object.assign(DOG.style,{left:p[0]+'px',top:p[1]+'px',width:z+'px',height:z+'px',clipPath:(sink||hole)?'inset(-40% -40% 7% -40%)':'none'});
+  DOGI.style.transform=`translateY(${(sink?sink*z*1.02:by).toFixed(1)}px) rotate(${(Math.sin(t*1.3)*2.5).toFixed(2)}deg)`;
+  Object.assign(HOLE.style,{left:(p[0]+z*.1)+'px',top:(p[1]+z*.86)+'px',width:(z*.8)+'px',height:(z*.14)+'px',opacity:hole.toFixed(2),transform:`scaleX(${(.25+.75*hole).toFixed(2)})`});
+  if(DOGI.dataset.k!=dk){DOGI.dataset.k=dk;DOGI.innerHTML=AV(o,bl)}}
+if(DOGON&&!DQ){const SEL='.bt,.pill,.q0,.g1,.c1t,.w1,.w2,.zy,.from,.h3,.mn>span,.n3,.h4,.h4b,.ch4,.q4,.b4t,.m4,.a4,.by,.sv,.cm,.fo',
+  // 候选位置［左, 上, 边长］：都在大字区和各平台按钮、字幕、顶栏让开的地方；排前面的优先
+  DC=[[724,1236,200],[56,1236,200],[846,286,160],[862,556,168],[40,800,168],[446,1290,170],[764,1290,160],[96,1290,160],[724,1446,200]],
+  ov=(a,b)=>Math.max(0,Math.min(a[2],b.right+14)-Math.max(a[0],b.left-14))*Math.max(0,Math.min(a[3],b.bottom+14)-Math.max(a[1],b.top-14)),
+  eop=el=>{let v=1;for(let e=el;e&&e.id!='scr';e=e.parentElement){const c=getComputedStyle(e);if(c.visibility=='hidden'||c.display=='none')return 0;v*=+c.opacity}return v},
+  own=el=>[...el.childNodes].some(n=>n.nodeType==3&&n.textContent.trim()),
+  grab=(t,R)=>{window.seek(t);let ci=0;while(ci<4&&t>=CS[ci+1])ci++;const add=r=>{if(r.width&&r.height&&r.right>0&&r.bottom>0&&r.left<1080&&r.top<1920)R.push(r)};
+    for(const el of $$(SEL,CARDS[ci])){const ks=[el,...el.querySelectorAll('*')];for(const x of ks)if(own(x)&&eop(x)>.05)add(rw(x))}
+    for(const el of $$('.cd',CARDS[ci]))if(eop(el)>.05)add(el.getBoundingClientRect());
+    if(t<X[2]+.15||t>X[2]+.75)for(const el of $$('#tiles .tile'))if(eop(el)>.05)add(el.getBoundingClientRect());   // 字牌被反转炸飞那半秒一闪而过，不算挡
+    for(const el of $$('#yy .ypn'))if(eop(el)>.05)add(el.getBoundingClientRect())};
+  // 先把整条片每 0.2 秒量一次：每个候选位置在这一刻碰到字多少
+  const ST=[],SO=[];for(let t=.1;t<TM.dur;t+=.2){const R=[];grab(t,R);ST.push(t);SO.push(DC.map(c=>R.reduce((s,r)=>s+ov([c[0],c[1],c[0]+c[2],c[1]+c[2]],r),0)))}
+  {const R=[];grab(COVER,R);ST.push(-1);SO.push(DC.map(c=>R.reduce((s,r)=>s+ov([c[0],c[1],c[0]+c[2],c[1]+c[2]],r),0)))}   // 封面帧也不许盖字
+  const LN=[...TM.lines].sort((a,b)=>a.t0-b.t0),PT=[...new Set([...LN.slice(1).map((l,i)=>(LN[i].t1+l.t0)/2),...CS.slice(1,5).map(x=>x+.05)].map(x=>+x.toFixed(2)))].sort((a,b)=>a-b).filter(x=>x>2&&x<TM.dur-2.5&&!(PZ&&x>PZ[0]-.4&&x<PZ[0]+PZ[1]+.2));   // 按停那一段不换位（角色要在原地跳）
+  const cost=(s0,s1,ci)=>{let o=0;ST.forEach((t,i)=>{if((t<0&&s0==0)||(t>=s0+(s0?.3:0)&&t<=s1-.25))o+=SO[i][ci]});return o},TOL=2500;   // 碰到 2500 平方像素以内算擦边（量的时候四周已多留了 14 像素）
+  const used=[];DSEG=[];let s0=0;
+  while(s0<TM.dur){let ends=PT.filter(e=>e-s0>=2.4&&e-s0<=8);if(TM.dur-s0<=8)ends.push(TM.dur+1);if(!ends.length)ends=[PT.find(e=>e-s0>=2.4)||TM.dur+1];ends.sort((x,y)=>x-y);   // 一段 2.4 到 8 秒，越长越好
+    let pick=null;
+    for(const e of ends.slice().reverse()){
+      for(const back of [2,1]){let bi=-1,bo=1e12;DC.forEach((c,ci)=>{if(used.slice(-back).some(u=>Math.hypot(u[0]-c[0],u[1]-c[1])<240))return;const o=cost(s0,e,ci);if(o<bo){bo=o;bi=ci}});if(bi>=0&&bo<=TOL){pick=[e,bi,bo];break}}
+      if(pick)break}
+    if(!pick){const e=ends[0],best=f=>{let bi=0,bo=1e12;DC.forEach((c,ci)=>{if(!f(c))return;const o=cost(s0,e,ci);if(o<bo){bo=o;bi=ci}});return [e,bi,bo]};
+      const far=best(c=>!used.slice(-1).some(u=>Math.hypot(u[0]-c[0],u[1]-c[1])<240)),any=best(()=>1);pick=far[2]<=TOL?far:any;   // 远处都盖字，就原地钻下去再钻上来
+      if(pick[2]>TOL){DOGNOTE.push(`${s0.toFixed(1)}—${Math.min(pick[0],TM.dur).toFixed(1)} 秒字太满，柯基躲起来不露面`);pick[1]=-1}}
+    const c=pick[1]<0?null:DC[pick[1]];if(c)used.push(c);DSEG.push([s0,pick[0],c]);if(s0&&c)sfx(s0+.02,'tick');s0=pick[0]}
+  window.seek(0)}
+// ———— 七、破界两招（主人 11-19 点卡“两招稳版一起上，隔条对照”，差异清单 v1 过）：导入处“小屏撑满”、悬念处“主持人按停” ————
+// 从里面破、不冒充外面：不画仿平台、仿系统的按钮和图标。头两帧封面一个像素不动。时刻和位置全按本条的配音时间和版面算
+const PJN=[];let PJI={pause:null,land:null};
+if(PZ||LAND){const scr=$('#scr'),SH=$('#shake'),mk=(css,html='',z=95)=>{const d=document.createElement('div');d.style.cssText='position:absolute;pointer-events:none;z-index:'+z+';'+css;d.innerHTML=html;scr.appendChild(d);return d};
+  const cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),eo=x=>1-(1-cl(x))**3,back=x=>{x=cl(x);return 1+2.2*(x-1)**3+1.2*(x-1)**2};
+  const vis=el=>{for(let e=el;e&&e.id!='scr';e=e.parentElement){const c=getComputedStyle(e);if(c.visibility=='hidden'||c.display=='none'||+c.opacity<.05)return 0}return 1};
+  // 小屏撑满：横窗＝问卡大字外框上下各留 56 像素，至少 608 高（16:9）；第二行大字砸下那一刻黑边被顶飞。只有一行大字（撑开太早）或大字太高（窗超过 900）就不带
+  let TB=null,Y0=0,Y1=1920;
+  if(LAND){window.seek(COVER);const rs=$$('.c1 .g1 .k').map(e=>e.getBoundingClientRect()).filter(r=>r.height);
+    const ib=tAsk.findIndex((t,i)=>i&&t-.03>=.8&&t-.03<=2.6);   // 撑开要落在 0.8—2.6 秒里第二行起的某行大字砸下那一刻：太早小窗一闪而过，太晚头三秒全是小窗
+    if(tAsk.length<2)PJN.push('只有一行大字，不带小屏撑满');
+    else if(ib<0)PJN.push('第二行起的大字没有落在 0.8—2.6 秒里的（'+tAsk.slice(1).map(t=>(t-.03).toFixed(2)).join('、')+' 秒），不带小屏撑满');
+    else if(!rs.length)PJN.push('量不到大字，不带小屏撑满');
+    else{let a=Math.min(...rs.map(r=>r.top))-56,b=Math.max(...rs.map(r=>r.bottom))+56;if(b-a<608){const m=(a+b)/2;a=m-304;b=m+304}a=Math.max(0,Math.round(a));b=Math.min(1920,Math.round(b));
+      if(b-a>900)PJN.push('大字太高（窗要 '+(b-a)+' 像素），不带小屏撑满');else{TB=tAsk[ib]-.03;Y0=a;Y1=b;sfx(TB,'land')}}}
+  // 主持人按停：前 0.35 秒全静止全静音；之后压暗去色、角色跳两下、倒数环转一圈、三声倒数；角色不压暗（#dog 在 #shake 外）
+  // 环下那行字（主人 11-19 点“先猜”）：钩子里说了“孔子N个字”就写“先猜：哪N个字？”，没说就写“先别看答案”
+  let ring=null,cap=null,pan=null,PAN=0,RY=0;const N2=NUM(N),CAP=(S.fx&&S.fx.cap)||(String(S.hook.say||'').includes(N2+'个字')?'先猜：哪'+N2+'个字？':'先别看答案');
+  if(PZ){window.seek(PZ[0]);const R=[];for(const el of $$('.c1 .pill,.c1 .q0,.c1 .bt,.c1 .hot,.c1 .g1 .k,.c1 .c1t .k,#tiles .tile'))if(vis(el)){const r=el.getBoundingClientRect();if(r.width&&r.height)R.push(r)}
+    if(DOGON&&DSEG){const sg=DSEG.find(x=>PZ[0]>=x[0]&&PZ[0]<x[1]);if(sg&&sg[2]){const p=sg[2];R.push({left:p[0],top:p[1]-60,right:p[0]+p[2],bottom:p[1]+p[2]})}}
+    const ov=(y,r)=>Math.max(0,Math.min(880,r.right)-Math.max(200,r.left))*Math.max(0,Math.min(y+330,r.bottom)-Math.max(y,r.top));let best=null;
+    for(let y=300;y<=1440-330;y+=10){const o=R.reduce((s,r)=>s+ov(y,r),0),k=o+Math.abs(y+165-1060)*30;if(!best||k<best[1])best=[y,k,o]}
+    // 找不到全空的一条（字牌占满中间时常见）：改在字牌正中放一块深色圆角底板，倒数环和字放在板上，看着是主持人举起来的一块牌，不是乱压在字上
+    if(best[2]>4000){const T2=R.filter(r=>r.top>560);const c=T2.length?(Math.min(...T2.map(r=>r.top))+Math.max(...T2.map(r=>r.bottom)))/2:1060;best=[Math.round(Math.min(1110,Math.max(300,c-165)))];PAN=1}
+    RY=best[0];
+    pan=PAN?mk(`left:200px;top:${RY-34}px;width:680px;height:398px;border-radius:40px;background:rgba(12,10,9,.9);box-shadow:0 18px 60px rgba(0,0,0,.55);opacity:0`):null;
+    cap=mk(`left:0;top:${RY}px;width:1080px;text-align:center;font:900 58px/72px SC,sans-serif;color:#fff;letter-spacing:4px;opacity:0;text-shadow:0 4px 18px rgba(0,0,0,.85)`,esc(CAP));
+    ring=mk(`left:420px;top:${RY+90}px;width:240px;height:240px;opacity:0`,'<svg width="240" height="240" viewBox="0 0 240 240"><circle cx="120" cy="120" r="98" fill="rgba(12,10,9,.82)" stroke="rgba(255,255,255,.16)" stroke-width="16"/><circle class="pjr" cx="120" cy="120" r="98" fill="none" stroke="#F4C534" stroke-width="16" stroke-linecap="round" transform="rotate(-90 120 120)" stroke-dasharray="615.8" stroke-dashoffset="0"/><text x="120" y="158" text-anchor="middle" font-family="SC,sans-serif" font-weight="900" font-size="108" fill="#fff">猜</text></svg>');
+    [.45,.85,1.25].forEach(d=>sfx(PZ[0]+d*PZ[1]/1.6,'cnt'))}
+  const bt=mk(`left:0;top:0;width:1080px;height:${Y0}px;background:#000;display:none`,'',80),bb=mk(`left:0;top:${Y1}px;width:1080px;height:${1920-Y1}px;background:#000;display:none`,'',80),pr=ring&&ring.querySelector('.pjr');
+  PJ=T=>{SH.style.filter='';SH.style.scale='';DOG.style.translate='';DOG.style.rotate='';if(ring){ring.style.opacity=0;cap.style.opacity=0;if(pan)pan.style.opacity=0}bt.style.display=bb.style.display='none';
+    if(T<.06)return;                                                                  // 头两帧是封面，不叠任何东西
+    if(TB!=null){const v=T-TB;if(v<.5){bt.style.display=bb.style.display='';SH.style.transformOrigin=`540px ${(Y0+Y1)/2}px`;
+        const pre=v>-.18&&v<0?Math.sin(v*90)*7:0,e=v<0?0:back(v/.3);bt.style.translate=`0 ${(pre-e*Y0).toFixed(1)}px`;bb.style.translate=`0 ${(-pre+e*(1920-Y1)).toFixed(1)}px`;
+        if(v>=0&&v<.34)SH.style.scale=(1+.09*(1-eo(v/.34))).toFixed(4)}}
+    if(PZ){const D=PZ[1],u=T-PZ[0];if(u>=0&&u<D){const k=eo((u-.35)/.16)*(1-eo((u-D+.1)/.1));SH.style.filter=`saturate(${(1-.75*k).toFixed(3)}) brightness(${(1-.34*k).toFixed(3)})`;
+        if(pan){pan.style.opacity=k;pan.style.scale=.9+.1*back((u-.35)/.22)}ring.style.opacity=k;ring.style.scale=.6+.4*back((u-.35)/.22);cap.style.opacity=k;cap.style.translate=`0 ${((1-eo((u-.35)/.2))*30).toFixed(1)}px`;pr.setAttribute('stroke-dashoffset',(615.8*cl((u-.45)/(D-.55))).toFixed(1));
+        const h=u-.35;if(h>0){const j=Math.abs(Math.sin(h*Math.PI/.42))*46*Math.exp(-h*1.1);DOG.style.translate=`0 ${(-j).toFixed(1)}px`;DOG.style.rotate=(Math.sin(h*7)*9).toFixed(1)+'deg'}}}};
+  PJI={pause:PZ?{t:PZ[0],dur:PZ[1],cap:CAP,y:RY,panel:PAN}:null,land:TB!=null?{t:+TB.toFixed(3),win:[Y0,Y1]}:null};window.seek(0)}
+window.DOGNOTE=DOGNOTE;window.DSEG=DSEG.map(x=>[x[0],x[1],x[2]||['躲']]);window.SFX=SFX.sort((a,b)=>a.t-b.t);window.CHK=CHK;window.INFO={ep:EP,dur:TM.dur,n:N,g:G,cuts:X,fx:PJI,fxnote:PJN};window.seek(0);window.READY=1;
+})().catch(e=>{window.ERR=String(e&&e.message||e)});
+</script></body></html>
