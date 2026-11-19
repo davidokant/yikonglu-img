@@ -54,7 +54,7 @@ def pojie(ep):
     return {'带': '两招' if p and l else '只带按停' if p else '只带撑满', '撑开秒': l and l['t'], '按停秒': p and p['t'], '按停多久': p and p['dur'], '说明': j.get('note') or []}
 
 def pbwarn(ep):
-    """进度条机检（11-19 加）：render.js 写的 out/pb.json，有就并进“提醒”，不拦片"""
+    """进度条机检（11-19 加）：没过的在机检就拦下不出片；这里只把 out/pb.json 里记的并进“提醒”备查"""
     try: return ['进度条：' + x for x in json.load(open(f'{HERE}ep/{ep}/out/pb.json', encoding='utf-8'))]
     except Exception: return []
 
