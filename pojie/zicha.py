@@ -219,6 +219,7 @@ def ct020(a):
                 i=m.start()+ctx.index(ch);j=mp.get(i)
                 if j is None:continue
                 if (x and S[j]==x) or any(a_<=j<b_ for a_,b_,_ in sp):continue
+                if S[j]!=ch:continue  # 11-20 十一接班：已换成别的同音字（如 为→位、叶→社）也算落实；替字调对不对归 CT-016 送配替字错表管
                 bad.append(f'{s["id"]}「{ctx}」的“{ch}”送配仍是“{S[j]}”，稿读音表要求'+(f'换“{x}”' if x else '锁读')+'，也没被锁读表锁住')
     return sorted(set(bad))[:30]
 def yujian(a):
@@ -234,7 +235,12 @@ def ct022(a):
     if not a.ep:return None
     r=subprocess.run([sys.executable,os.path.join(HERE,'jiazi_zha.py'),a.ep],capture_output=True,text=True)
     return [l.strip() for l in r.stdout.splitlines() if l.strip() and not l.startswith('==')][:20]
-CHECKS=[('CT-001a 读音漏锁',ct001_lou),('CT-001b 后加规则未测',ct001_hou),('CT-002 跨页红框',ct002),('CT-003 进度条',ct003),('CT-004 原页白边',ct004),('CT-005 英文章节书序',ct005),('CT-006 章号错位',ct006),('CT-007 锁读表回归',ct007),('CT-008 繁体误转',ct008),('CT-009 发布单',ct009),('CT-010 补配文字',ct010),('CT-011 经文逐字',ct011),('CT-013 白话增词',ct013),('CT-016 送配替字错',ct016),('CT-020 读音表替字落实',ct020),('CT-022 红框夹字',ct022),('常规 渲前预检',yujian)]
+def ct023(a):
+    """CT-023 空拍：typeset 每一拍都要被场景 TypeSet ids 渲到，不然空屏（道德经跨页拆拍新拍漏登记）。kongpai_zha.py 须 0"""
+    if not a.ep:return None
+    r=subprocess.run([sys.executable,os.path.join(HERE,'kongpai_zha.py'),a.ep],capture_output=True,text=True)
+    return [l.strip() for l in r.stdout.splitlines() if l.strip() and not l.startswith('==')][:20]
+CHECKS=[('CT-001a 读音漏锁',ct001_lou),('CT-001b 后加规则未测',ct001_hou),('CT-002 跨页红框',ct002),('CT-003 进度条',ct003),('CT-004 原页白边',ct004),('CT-005 英文章节书序',ct005),('CT-006 章号错位',ct006),('CT-007 锁读表回归',ct007),('CT-008 繁体误转',ct008),('CT-009 发布单',ct009),('CT-010 补配文字',ct010),('CT-011 经文逐字',ct011),('CT-013 白话增词',ct013),('CT-016 送配替字错',ct016),('CT-020 读音表替字落实',ct020),('CT-022 红框夹字',ct022),('CT-023 空拍',ct023),('常规 渲前预检',yujian)]
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('--gao');ap.add_argument('--ep');ap.add_argument('--dv');ap.add_argument('--kind',default='论语长片');ap.add_argument('--pb');ap.add_argument('--root');ap.add_argument('--xe');ap.add_argument('--bupei');ap.add_argument('--qi')
     a=ap.parse_args();rc=0
