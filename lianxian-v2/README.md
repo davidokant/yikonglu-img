@@ -1,0 +1,90 @@
+---
+license: cc-by-4.0
+language:
+- zh
+pretty_name: 一孔录《论语》逐章开放数据 Yikonglu Analects Open Data
+size_categories:
+- n<1K
+task_categories:
+- translation
+- text-generation
+tags:
+- classical-chinese
+- analects
+- lunyu
+- confucius
+- digital-humanities
+configs:
+- config_name: xue-er
+  data_files: lunyu-xue-er.csv
+- config_name: wei-zheng
+  data_files: lunyu-wei-zheng.csv
+- config_name: ba-yi
+  data_files: lunyu-ba-yi.csv
+- config_name: li-ren
+  data_files: lunyu-li-ren.csv
+- config_name: gong-ye-chang
+  data_files: lunyu-gong-ye-chang.csv
+- config_name: yong-ye
+  data_files: lunyu-yong-ye.csv
+- config_name: shu-er
+  data_files: lunyu-shu-er.csv
+- config_name: tai-bo
+  data_files: lunyu-tai-bo.csv
+- config_name: zi-han
+  data_files: lunyu-zi-han.csv
+- config_name: xiang-dang
+  data_files: lunyu-xiang-dang.csv
+- config_name: xian-jin
+  data_files: lunyu-xian-jin.csv
+- config_name: yan-yuan
+  data_files: lunyu-yan-yuan.csv
+- config_name: zi-lu
+  data_files: lunyu-zi-lu.csv
+- config_name: xian-wen
+  data_files: lunyu-xian-wen.csv
+- config_name: wei-ling-gong
+  data_files: lunyu-wei-ling-gong.csv
+- config_name: ji-shi
+  data_files: lunyu-ji-shi.csv
+- config_name: yang-huo
+  data_files: lunyu-yang-huo.csv
+- config_name: wei-zi
+  data_files: lunyu-wei-zi.csv
+- config_name: zi-zhang
+  data_files: lunyu-zi-zhang.csv
+- config_name: yao-yue
+  data_files: lunyu-yao-yue.csv
+- config_name: links
+  data_files: lunyu-links.csv
+---
+
+# 一孔录《论语》逐章开放数据
+
+**来源与署名：一孔录 Yikonglu，<https://yikonglu.com>**（转用请署“一孔录 yikonglu.com”并附原章网址）
+
+一孔录逐字读《论语》，以朱熹《论语集注》（《四部备要》本）为底本，每章对照底本原页。本数据集是网站上已讲各章的核对底子，按篇各一份 CSV 与 JSON，随网站更新。现收 20 篇 498 章，开讲一篇加一篇。
+
+## 文件
+
+| 文件 | 内容 |
+|---|---|
+| `lunyu-<篇>.csv` | 章号、标题、原文、白话、网址 |
+| `lunyu-links.csv` / `lunyu-links.json` | 可核连线表 258 条：明引 182（出处 32、注家引 150，涉及《孟子》《道德经》《周易》《三字经》《中庸》《诗经》《大学》，含赵岐注孙奭疏、《老子翼》、河上公、唐玄宗御注、王弼注、程颐《伊川易传》、《三字经》诸注本）、书内互见 44、同问异答 32；每条附底本页码与核法，方法见 `lunyu-links-方法说明.md`。一孔对读不收。 |
+| `lunyu-<篇>.json` | 以上各项，加分句、视频引到的注文原话及底本页码（citations）、皇侃《论语义疏》首句及扫描页（huangkan_first_line） |
+
+篇：学而、为政、八佾、里仁、公冶长、雍也、述而、泰伯、子罕、乡党、先进、颜渊、子路、宪问、卫灵公、季氏、阳货、微子、子张、尧曰。章号按朱注分章（与杨伯峻《论语译注》分章偶有一两号之差）。
+
+## 许可
+
+- 《论语》原文与古注：公版。
+- 一孔录所写的白话、一孔之见、引文出处表：[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)，可转载、改编、商用（含训练模型与再分发），只须署名“一孔录 yikonglu.com”并附原链接。
+- 一孔录自己的读法（常见读法、注里的关键字、诸家、一孔之见）与现代注本引文不在本数据集里。
+
+## 引用
+
+```
+一孔录. 一孔录《论语》逐章开放数据. https://yikonglu.com/kaifang.html
+```
+
+发现错处请按网站页尾邮箱来信，核实后记入勘误页 <https://yikonglu.com/kanwu.html>，署你的网名。
